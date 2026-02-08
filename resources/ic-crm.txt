@@ -1,0 +1,218 @@
+Cahier des Charges
+Projet Fil Rouge – IC-CRM
+
+Customer Relationship Management System
+
+1. Présentation générale du projet
+
+IC-CRM est une application web de gestion de la relation client destinée aux équipes commerciales.
+Elle permet de centraliser les informations clients, de suivre les opportunités commerciales, d’organiser les tâches quotidiennes et d’analyser les performances de vente selon une hiérarchie de rôles clairement définie.
+
+Le projet repose sur une architecture web moderne, sécurisée et évolutive, basée sur un Frontend en Next.js et un Backend en NestJS, répondant aux besoins réels d’une organisation commerciale.
+
+2. Objectifs du projet
+
+Les objectifs principaux de IC-CRM sont :
+
+Centraliser et structurer les données clients
+
+Optimiser le suivi du cycle de vente (pipeline commercial)
+
+Faciliter la collaboration entre les membres des équipes commerciales
+
+Améliorer la visibilité sur les performances individuelles et collectives
+
+Mettre en place un système de gestion des rôles et permissions
+
+Concevoir une application maintenable et évolutive
+
+3. Périmètre fonctionnel
+Fonctionnalités incluses
+
+Authentification et gestion des accès
+
+Gestion des utilisateurs et des rôles
+
+Gestion des équipes commerciales
+
+Gestion des clients
+
+Gestion des opportunités commerciales
+
+Gestion des tâches
+
+Tableaux de bord et statistiques
+
+Hors périmètre
+
+Facturation et paiements
+
+Notifications en temps réel
+
+Intégrations externes (ERP, CRM tiers)
+
+4. Acteurs du système
+Administrateur
+
+Accès complet à l’ensemble du système
+
+Gestion des utilisateurs, des rôles et des équipes
+
+Consultation de toutes les données et statistiques globales
+
+Responsable Commercial
+
+Gestion de son équipe
+
+Attribution et suivi des tâches
+
+Suivi des performances commerciales de l’équipe
+
+Commercial
+
+Gestion de ses clients
+
+Suivi et mise à jour de ses opportunités commerciales
+
+Exécution et suivi de ses tâches
+
+5. Fonctionnalités détaillées
+5.1 Authentification et sécurité
+
+Connexion et déconnexion sécurisées
+
+Authentification basée sur des tokens JWT
+
+Contrôle d’accès selon les rôles utilisateurs (RBAC)
+
+5.2 Gestion des utilisateurs
+
+Création, modification et suppression des utilisateurs
+
+Attribution d’un rôle à chaque utilisateur
+
+Affectation des utilisateurs à une équipe commerciale
+
+5.3 Gestion des équipes
+
+Création des équipes par zone géographique ou organisationnelle
+
+Désignation d’un responsable d’équipe
+
+Association des commerciaux aux équipes
+
+5.4 Gestion des clients
+
+Création, modification et suppression des clients
+
+Gestion des informations de contact et des entreprises
+
+Classification des clients (Lead, Prospect, Actif, Inactif)
+
+Affectation des clients à un commercial
+
+5.5 Gestion des opportunités commerciales
+
+Création d’une opportunité liée à un client
+
+Suivi de l’état de l’opportunité (Nouveau, En cours, Gagné, Perdu)
+
+Définition du montant et de la probabilité de succès
+
+Historique des actions réalisées sur chaque opportunité
+
+5.6 Gestion des tâches
+
+Création et attribution des tâches
+
+Définition des priorités et des échéances
+
+Suivi de l’état d’avancement des tâches
+
+5.7 Tableaux de bord et statistiques
+
+Visualisation globale de l’activité commerciale
+
+Statistiques par équipe et par utilisateur
+
+Suivi du chiffre d’affaires et du taux de conversion
+
+Présentation des indicateurs clés sous forme de graphiques
+
+6. User Stories
+Administrateur
+
+US-ADMIN-01
+En tant qu’Administrateur, je souhaite créer et gérer les utilisateurs afin de contrôler l’accès au système.
+
+US-ADMIN-02
+En tant qu’Administrateur, je souhaite organiser les équipes commerciales afin de structurer l’organisation interne.
+
+US-ADMIN-03
+En tant qu’Administrateur, je souhaite consulter les statistiques globales afin d’évaluer la performance globale.
+
+Responsable Commercial
+
+US-MANAGER-01
+En tant que Responsable Commercial, je souhaite visualiser les membres de mon équipe afin d’en assurer le suivi.
+
+US-MANAGER-02
+En tant que Responsable Commercial, je souhaite attribuer des tâches afin d’organiser efficacement le travail.
+
+US-MANAGER-03
+En tant que Responsable Commercial, je souhaite suivre les opportunités commerciales de mon équipe afin de mesurer les performances.
+
+Commercial
+
+US-SALES-01
+En tant que Commercial, je souhaite gérer mes clients afin d’assurer un suivi commercial efficace.
+
+US-SALES-02
+En tant que Commercial, je souhaite créer et mettre à jour mes opportunités afin de suivre l’évolution des ventes.
+
+US-SALES-03
+En tant que Commercial, je souhaite consulter et mettre à jour mes tâches afin de prioriser mon travail quotidien.
+
+7. Contraintes techniques
+
+Frontend : Next.js, TypeScript, Tailwind CSS
+
+Backend : NestJS, TypeScript
+
+Base de données : PostgreSQL
+
+Authentification : JWT
+
+API : REST (documentation via Swagger)
+
+Architecture : modulaire et scalable
+
+Gestion de version : Git / GitHub
+
+8. Critères de réussite
+
+Respect strict des rôles et permissions
+
+Sécurité et cohérence des données
+
+Interface utilisateur ergonomique et responsive
+
+Code clair, structuré et maintenable
+
+Validation complète des fonctionnalités décrites
+
+Couverture complète des User Stories
+
+9. Évolutions possibles
+
+Mise en place d’une architecture microservices
+
+Ajout de rapports avancés
+
+Historique détaillé des actions utilisateurs
+
+Optimisation des performances à grande échelle
+
+Conclusion
+
+Le projet IC-CRM est une application de gestion commerciale complète et réaliste, démontrant la maîtrise des concepts Full-Stack, de la sécurité applicative et de l’architecture logicielle moderne, conformément aux exigences d’un Projet Fil Rouge professionnel.

@@ -1,0 +1,46 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36" version="29.3.6">
+  <diagram name="IC-CRM UML Class Diagram" id="0">
+    <mxGraphModel dx="1793" dy="793" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="User" parent="1" style="swimlane;rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;startSize=32;" value="User&#xa;──────────────────&#xa;+id: UUID&#xa;+fullName: string&#xa;+email: string&#xa;+passwordHash: string&#xa;+isActive: boolean&#xa;+createdAt: Date" vertex="1">
+          <mxGeometry height="260" width="300" x="40" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Role" parent="1" style="swimlane;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;startSize=32;" value="Role&#xa;──────────────────&#xa;+id: UUID&#xa;+name: ADMIN | MANAGER | SALES&#xa;+permissions: string[]" vertex="1">
+          <mxGeometry height="220" width="300" x="420" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Team" parent="1" style="swimlane;rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;startSize=32;" value="Team&#xa;──────────────────&#xa;+id: UUID&#xa;+name: string&#xa;+region: string&#xa;+managerId: UUID" vertex="1">
+          <mxGeometry height="220" width="300" x="40" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="Client" parent="1" style="swimlane;rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;startSize=32;" value="Client&#xa;──────────────────&#xa;+id: UUID&#xa;+companyName: string&#xa;+email: string&#xa;+phone: string&#xa;+status: Lead | Prospect | Active | Inactive&#xa;+assignedToId: UUID" vertex="1">
+          <mxGeometry height="260" width="330" x="420" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="Opportunity" parent="1" style="swimlane;rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;startSize=32;" value="Opportunity&#xa;──────────────────&#xa;+id: UUID&#xa;+title: string&#xa;+amount: decimal&#xa;+probability: number&#xa;+status: New | InProgress | Won | Lost&#xa;+clientId: UUID&#xa;+ownerId: UUID" vertex="1">
+          <mxGeometry height="280" width="360" x="820" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="Task" parent="1" style="swimlane;rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;startSize=32;" value="Task&#xa;──────────────────&#xa;+id: UUID&#xa;+title: string&#xa;+priority: Low | Medium | High&#xa;+dueDate: Date&#xa;+status: Todo | Doing | Done&#xa;+assignedToId: UUID" vertex="1">
+          <mxGeometry height="260" width="360" x="820" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="rel1" edge="1" parent="1" source="User" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;strokeWidth=2;" target="Role">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel2" edge="1" parent="1" source="Team" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;strokeWidth=2;" target="User">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel3" edge="1" parent="1" source="User" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;strokeWidth=2;" target="Client">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel4" edge="1" parent="1" source="Client" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;strokeWidth=2;" target="Opportunity">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel5" edge="1" parent="1" source="User" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;strokeWidth=2;" target="Opportunity">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel6" edge="1" parent="1" source="User" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;strokeWidth=2;" target="Task">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
