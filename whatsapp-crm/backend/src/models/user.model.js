@@ -28,6 +28,8 @@ const userSchema = new mongoose.Schema({
   revokedPermissions: { type: [String], default: [] },
   refreshToken: { type: String, select: false },
   isActive: { type: Boolean, default: true },
+  messageCount: { type: Number, default: 0 },
+  lastActiveAt: { type: Date, default: null },
 }, {
   timestamps: true,
   versionKey: false,
