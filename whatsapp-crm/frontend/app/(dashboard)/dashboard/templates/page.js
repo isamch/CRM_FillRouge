@@ -2,6 +2,18 @@
 
 import { useState } from "react";
 import { useTemplates } from "@/hooks/useTemplates";
+import { useForm } from "@/lib/useForm";
+import { rules } from "@/lib/rules";
+
+const templateSchema = {
+  name: [rules.required("Name"), rules.min(2, "Name"), rules.max(100, "Name")],
+  body: [rules.required("Body"), rules.min(5, "Body")],
+};
+
+function FieldError({ error, touched }) {
+  if (!error || !touched) return null;
+  return <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0" }}>{error}</p>;
+}
 
 function Modal({ title, onClose, children }) {
   return (
@@ -18,57 +30,35 @@ function Modal({ title, onClose, children }) {
 }
 
 function TemplateEditorModal({ template, onClose, onSave, submitting }) {
-  const [form, setForm] = useState({ name: template?.name || "", body: template?.body || "" });
-  const [errors, setErrors] = useState({});
+  const { values, errors, touched, field, validate, setApiErrors, reset } = useForm(
+    { name: template?.name || "", body: template?.body || "" },
+    templateSchema
+  );
 
-  const validate = (f) => {
-    const e = {};
-    if (!f.name.trim()) e.name = "Name is required";
-    else if (f.name.trim().length < 2) e.name = "Name must be at least 2 characters";
-    if (!f.body.trim()) e.body = "Body is required";
-    else if (f.body.trim().length < 5) e.body = "Body must be at least 5 characters";
-    return e;
-  };
+  const variables = [...new Set((values.body.match(/\{\{(\w+)\}\}/g) || []).map(m => m.replace(/\{\{|\}\}/g, "")))];
+  const preview = values.body.replace(/\{\{(\w+)\}\}/g, (_, v) => `<mark style="background:#FEF9C3;padding:1px 4px;border-radius:4px">${v}</mark>`);
 
-  const handleChange = (field, value) => {
-    const updated = { ...form, [field]: value };
-    setForm(updated);
-    const e = validate(updated);
-    setErrors((prev) => ({ ...prev, [field]: e[field] || "" }));
-  };
-
-  const variables = [...new Set((form.body.match(/\{\{(\w+)\}\}/g) || []).map(m => m.replace(/\{\{|\}\}/g, "")))];
-  const preview = form.body.replace(/\{\{(\w+)\}\}/g, (_, v) => `<mark style="background:#FEF9C3;padding:1px 4px;border-radius:4px">${v}</mark>`);
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const e2 = validate(form);
-    if (Object.values(e2).some(Boolean)) return setErrors(e2);
-    onSave(form, setErrors);
+    if (!validate()) return;
+    onSave(values, setApiErrors);
   };
 
-  const inputStyle = (field) => ({
-    padding: "10px 14px", borderRadius: "8px",
-    border: `1px solid ${errors[field] ? "#ef4444" : "#E2E8F0"}`,
-    fontSize: "14px", outline: "none", width: "100%", boxSizing: "border-box",
-  });
+  const inputBase = { padding: "10px 14px", borderRadius: "8px", fontSize: "14px", outline: "none", width: "100%", boxSizing: "border-box" };
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div>
-        <input value={form.name} onChange={(e) => handleChange("name", e.target.value)}
-          placeholder="Template name" autoFocus style={inputStyle("name")} />
-        {errors.name && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0" }}>{errors.name}</p>}
+        <input {...field("name")} placeholder="Template name" autoFocus style={{ ...inputBase, ...field("name").style }} />
+        <FieldError error={errors.name} touched={touched.name} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
         <div>
           <div style={{ fontSize: "12px", fontWeight: "600", color: "#64748B", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Message Body</div>
-          <textarea value={form.body} onChange={(e) => handleChange("body", e.target.value)}
-            placeholder={"Hello {{name}},\n\nYour order {{orderId}} is ready!"}
-            rows={8}
-            style={{ ...inputStyle("body"), resize: "vertical", fontFamily: "monospace" }} />
-          {errors.body && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0" }}>{errors.body}</p>}
+          <textarea {...field("body")} placeholder={"Hello {{name}},\n\nYour order {{orderId}} is ready!"} rows={8}
+            style={{ ...inputBase, ...field("body").style, resize: "vertical", fontFamily: "monospace", fontSize: "13px" }} />
+          <FieldError error={errors.body} touched={touched.body} />
         </div>
         <div>
           <div style={{ fontSize: "12px", fontWeight: "600", color: "#64748B", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Live Preview</div>

@@ -7,8 +7,15 @@ import QRDisplay from "@/components/QRDisplay";
 import ConnectionStatus from "@/components/ConnectionStatus";
 import api from "@/lib/api";
 import { useToast } from "@/contexts/ToastContext";
+import { useForm } from "@/lib/useForm";
+import { rules } from "@/lib/rules";
 
 const TABS = ["Account", "Connection"];
+
+function FieldError({ error, touched }) {
+  if (!error || !touched) return null;
+  return <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0" }}>{error}</p>;
+}
 
 export default function SettingsPage() {
   const { user } = useAuthContext();
@@ -16,60 +23,50 @@ export default function SettingsPage() {
   const [tab, setTab] = useState(0);
   const toast = useToast();
 
-  const [profileForm, setProfileForm] = useState({ name: user?.name || "" });
-  const [profileErrors, setProfileErrors] = useState({});
-  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
-  const [passwordErrors, setPasswordErrors] = useState({});
+  const profileForm = useForm(
+    { name: user?.name || "" },
+    { name: [rules.required("Name"), rules.min(2, "Name"), rules.max(50, "Name")] }
+  );
+
+  const passwordForm = useForm(
+    { currentPassword: "", newPassword: "", confirmPassword: "" },
+    {
+      currentPassword: [rules.required("Current password")],
+      newPassword: [rules.required("New password"), rules.minLength(8)],
+      confirmPassword: [rules.required("Confirm password")],
+    }
+  );
+
   const [saving, setSaving] = useState({ profile: false, password: false });
 
-  const handleProfileChange = (value) => {
-    setProfileForm({ name: value });
-    if (!value.trim()) setProfileErrors({ name: "Name is required" });
-    else if (value.trim().length < 2) setProfileErrors({ name: "Name must be at least 2 characters" });
-    else setProfileErrors({});
-  };
-
-  const handlePasswordChange = (field, value) => {
-    const updated = { ...passwordForm, [field]: value };
-    setPasswordForm(updated);
-    const e = {};
-    if (field === "newPassword" && value && value.length < 8) e.newPassword = "Password must be at least 8 characters";
-    if (field === "confirmPassword" && value && value !== updated.newPassword) e.confirmPassword = "Passwords do not match";
-    setPasswordErrors((prev) => ({ ...prev, [field]: e[field] || "" }));
-  };
-
   const handleUpdateProfile = async () => {
-    if (!profileForm.name.trim()) return setProfileErrors({ name: "Name is required" });
-    if (profileForm.name.trim().length < 2) return setProfileErrors({ name: "Name must be at least 2 characters" });
+    if (!profileForm.validate()) return;
     setSaving((p) => ({ ...p, profile: true }));
     try {
-      await api.patch("/users/me", { name: profileForm.name });
+      await api.patch("/users/me", { name: profileForm.values.name });
       toast({ message: "Profile updated successfully" });
-      setProfileErrors({});
     } catch (e) {
-      const details = e?.response?.data?.details;
-      if (details) setProfileErrors(details.reduce((acc, { field, message }) => ({ ...acc, [field.replace(/^body\./, "")]: message }), {}));
-      else toast({ message: e.response?.data?.message || "Failed to update", type: "error" });
+      profileForm.setApiErrors(e);
+      if (!Object.keys(profileForm.errors).length) toast({ message: e.response?.data?.message || "Failed to update", type: "error" });
     } finally {
       setSaving((p) => ({ ...p, profile: false }));
     }
   };
 
   const handleChangePassword = async () => {
-    const e = {};
-    if (!passwordForm.currentPassword) e.currentPassword = "Current password is required";
-    if (!passwordForm.newPassword) e.newPassword = "New password is required";
-    else if (passwordForm.newPassword.length < 8) e.newPassword = "Password must be at least 8 characters";
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) e.confirmPassword = "Passwords do not match";
-    if (Object.keys(e).length) return setPasswordErrors(e);
+    if (!passwordForm.validate()) return;
+    if (passwordForm.values.newPassword !== passwordForm.values.confirmPassword) {
+      passwordForm.setApiErrors({ response: { data: { details: [{ field: "confirmPassword", message: "Passwords do not match" }] } } });
+      return;
+    }
     setSaving((p) => ({ ...p, password: true }));
     try {
-      await api.patch("/users/me/password", { currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword });
+      await api.patch("/users/me/password", { currentPassword: passwordForm.values.currentPassword, newPassword: passwordForm.values.newPassword });
       toast({ message: "Password changed successfully" });
-      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      setPasswordErrors({});
+      passwordForm.reset();
     } catch (e) {
-      toast({ message: e.response?.data?.message || "Failed to change password", type: "error" });
+      passwordForm.setApiErrors(e);
+      if (!Object.keys(passwordForm.errors).length) toast({ message: e.response?.data?.message || "Failed to change password", type: "error" });
     } finally {
       setSaving((p) => ({ ...p, password: false }));
     }
@@ -98,8 +95,8 @@ export default function SettingsPage() {
           <div style={{ background: "#fff", borderRadius: "12px", padding: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
             <h3 style={{ margin: "0 0 20px", fontSize: "15px", fontWeight: 700, color: "#111827" }}>Profile</h3>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>Full Name</label>
-            <input value={profileForm.name} onChange={(e) => handleProfileChange(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${profileErrors.name ? "#ef4444" : "#e5e7eb"}`, borderRadius: "8px", fontSize: "14px", marginBottom: "4px", boxSizing: "border-box" }} />
-            {profileErrors.name && <p style={{ color: "#ef4444", fontSize: "12px", margin: "0 0 12px" }}>{profileErrors.name}</p>}
+            <input {...profileForm.field("name")} style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", fontSize: "14px", marginBottom: "4px", boxSizing: "border-box", ...profileForm.field("name").style }} />
+            <FieldError error={profileForm.errors.name} touched={profileForm.touched.name} />
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>Email</label>
             <input value={user?.email || ""} disabled style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", marginBottom: "16px", boxSizing: "border-box", background: "#f9fafb", color: "#9ca3af" }} />
             <button onClick={handleUpdateProfile} disabled={saving.profile} style={{ padding: "9px 20px", borderRadius: "8px", border: "none", background: "#25d366", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "13px", opacity: saving.profile ? 0.7 : 1 }}>
@@ -117,8 +114,8 @@ export default function SettingsPage() {
             ].map(({ label, key }) => (
               <div key={key} style={{ marginBottom: "14px" }}>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>{label}</label>
-                <input type="password" value={passwordForm[key]} onChange={(e) => handlePasswordChange(key, e.target.value)} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${passwordErrors[key] ? "#ef4444" : "#e5e7eb"}`, borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }} />
-                {passwordErrors[key] && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0" }}>{passwordErrors[key]}</p>}
+                <input type="password" {...passwordForm.field(key)} style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", ...passwordForm.field(key).style }} />
+                <FieldError error={passwordForm.errors[key]} touched={passwordForm.touched[key]} />
               </div>
             ))}
             <button onClick={handleChangePassword} disabled={saving.password} style={{ padding: "9px 20px", borderRadius: "8px", border: "none", background: "#111827", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "13px", opacity: saving.password ? 0.7 : 1 }}>

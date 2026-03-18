@@ -2,39 +2,40 @@
 
 import { useState } from "react";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useForm } from "@/lib/useForm";
+import { rules } from "@/lib/rules";
 
 const TABS = ["Users", "Analytics", "Send Notification"];
+
+function FieldError({ error, touched }) {
+  if (!error || !touched) return null;
+  return <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0" }}>{error}</p>;
+}
 
 export default function AdminPage() {
   const { users, stats, usersStats, loading, toggleStatus, deleteUser, createUser, sendNotification } = useAdmin();
   const [tab, setTab] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: "", email: "", password: "" });
-  const [createErrors, setCreateErrors] = useState({});
-  const [notifForm, setNotifForm] = useState({ recipientId: "", subject: "", body: "" });
-  const [notifErrors, setNotifErrors] = useState({});
   const [notifSent, setNotifSent] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const validateCreate = (f) => {
-    const e = {};
-    if (!f.name.trim()) e.name = "Name is required";
-    else if (f.name.trim().length < 2) e.name = "Name must be at least 2 characters";
-    if (!f.email.trim()) e.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = "Invalid email format";
-    if (!f.password) e.password = "Password is required";
-    else if (f.password.length < 8) e.password = "Password must be at least 8 characters";
-    return e;
-  };
+  const createForm = useForm(
+    { name: "", email: "", password: "" },
+    {
+      name: [rules.required("Name"), rules.min(2, "Name")],
+      email: [rules.required("Email"), rules.email()],
+      password: [rules.required("Password"), rules.minLength(8)],
+    }
+  );
 
-  const validateNotif = (f) => {
-    const e = {};
-    if (!f.subject.trim()) e.subject = "Subject is required";
-    else if (f.subject.trim().length < 2) e.subject = "Subject must be at least 2 characters";
-    if (!f.body.trim()) e.body = "Message is required";
-    return e;
-  };
+  const notifForm = useForm(
+    { recipientId: "", subject: "", body: "" },
+    {
+      subject: [rules.required("Subject"), rules.min(2, "Subject")],
+      body: [rules.required("Message")],
+    }
+  );
 
   const handleDelete = async () => {
     await deleteUser(confirmDelete);
@@ -42,36 +43,29 @@ export default function AdminPage() {
   };
 
   const handleCreate = async () => {
-    const e = validateCreate(createForm);
-    if (Object.keys(e).length) return setCreateErrors(e);
+    if (!createForm.validate()) return;
     setSaving(true);
     try {
-      await createUser(createForm);
+      await createUser(createForm.values);
       setShowCreateModal(false);
-      setCreateForm({ name: "", email: "", password: "" });
-      setCreateErrors({});
-    } catch (err) {
-      const details = err?.response?.data?.details;
-      if (details) setCreateErrors(details.reduce((acc, { field, message }) => ({ ...acc, [field.replace(/^body\./, "")]: message }), {}));
-      else setCreateErrors({ name: err.response?.data?.message || "Failed to create user" });
+      createForm.reset();
+    } catch (e) {
+      createForm.setApiErrors(e);
     } finally {
       setSaving(false);
     }
   };
 
   const handleSendNotif = async () => {
-    const e = validateNotif(notifForm);
-    if (Object.keys(e).length) return setNotifErrors(e);
+    if (!notifForm.validate()) return;
     setSaving(true);
     try {
-      await sendNotification({ ...notifForm, recipientId: notifForm.recipientId || undefined });
+      await sendNotification({ ...notifForm.values, recipientId: notifForm.values.recipientId || undefined });
       setNotifSent(true);
-      setNotifForm({ recipientId: "", subject: "", body: "" });
-      setNotifErrors({});
+      notifForm.reset();
       setTimeout(() => setNotifSent(false), 3000);
-    } catch (err) {
-      const details = err?.response?.data?.details;
-      if (details) setNotifErrors(details.reduce((acc, { field, message }) => ({ ...acc, [field.replace(/^body\./, "")]: message }), {}));
+    } catch (e) {
+      notifForm.setApiErrors(e);
     } finally {
       setSaving(false);
     }
@@ -98,7 +92,7 @@ export default function AdminPage() {
       {tab === 0 && (
         <div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
-            <button onClick={() => { setShowCreateModal(true); setError(""); }} style={{ background: "#25d366", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 18px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>+ New User</button>
+            <button onClick={() => { setShowCreateModal(true); createForm.reset(); }} style={{ background: "#25d366", color: "#fff", border: "none", borderRadius: "8px", padding: "9px 18px", fontWeight: 600, cursor: "pointer", fontSize: "13px" }}>+ New User</button>
           </div>
           <div style={{ background: "#fff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
             {loading.users ? (
@@ -216,12 +210,12 @@ export default function AdminPage() {
             </select>
 
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>Subject</label>
-            <input value={notifForm.subject} onChange={(e) => { setNotifForm({ ...notifForm, subject: e.target.value }); setNotifErrors((p) => ({ ...p, subject: "" })); }} placeholder="Notification subject" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${notifErrors.subject ? "#ef4444" : "#e5e7eb"}`, borderRadius: "8px", fontSize: "14px", marginBottom: "4px", boxSizing: "border-box" }} />
-            {notifErrors.subject && <p style={{ color: "#ef4444", fontSize: "12px", margin: "0 0 12px" }}>{notifErrors.subject}</p>}
+            <input {...notifForm.field("subject")} placeholder="Notification subject" style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", fontSize: "14px", marginBottom: "4px", boxSizing: "border-box", ...notifForm.field("subject").style }} />
+            <FieldError error={notifForm.errors.subject} touched={notifForm.touched.subject} />
 
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>Message</label>
-            <textarea value={notifForm.body} onChange={(e) => { setNotifForm({ ...notifForm, body: e.target.value }); setNotifErrors((p) => ({ ...p, body: "" })); }} placeholder="Write your message..." rows={4} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${notifErrors.body ? "#ef4444" : "#e5e7eb"}`, borderRadius: "8px", fontSize: "14px", marginBottom: "4px", boxSizing: "border-box", resize: "vertical" }} />
-            {notifErrors.body && <p style={{ color: "#ef4444", fontSize: "12px", margin: "0 0 12px" }}>{notifErrors.body}</p>}
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px", marginTop: "12px" }}>Message</label>
+            <textarea {...notifForm.field("body")} placeholder="Write your message..." rows={4} style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", fontSize: "14px", marginBottom: "4px", boxSizing: "border-box", resize: "vertical", ...notifForm.field("body").style }} />
+            <FieldError error={notifForm.errors.body} touched={notifForm.touched.body} />
 
             {notifSent && <p style={{ color: "#10b981", fontSize: "13px", marginBottom: "12px", fontWeight: 600 }}>✓ Notification sent successfully!</p>}
 
@@ -237,15 +231,15 @@ export default function AdminPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
           <div style={{ background: "#fff", borderRadius: "16px", padding: "32px", width: "420px" }}>
             <h3 style={{ margin: "0 0 20px", fontSize: "18px", fontWeight: 700 }}>Create New User</h3>
-            {["name", "email", "password"].map((field) => (
-              <div key={field} style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px", textTransform: "capitalize" }}>{field}</label>
-                <input type={field === "password" ? "password" : "text"} value={createForm[field]} onChange={(e) => { setCreateForm({ ...createForm, [field]: e.target.value }); setCreateErrors((p) => ({ ...p, [field]: "" })); }} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${createErrors[field] ? "#ef4444" : "#e5e7eb"}`, borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }} />
-                {createErrors[field] && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0" }}>{createErrors[field]}</p>}
+            {["name", "email", "password"].map((f) => (
+              <div key={f} style={{ marginBottom: "14px" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px", textTransform: "capitalize" }}>{f}</label>
+                <input type={f === "password" ? "password" : "text"} {...createForm.field(f)} style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", ...createForm.field(f).style }} />
+                <FieldError error={createForm.errors[f]} touched={createForm.touched[f]} />
               </div>
             ))}
             <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "8px" }}>
-              <button onClick={() => { setShowCreateModal(false); setError(""); }} style={{ padding: "9px 18px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => { setShowCreateModal(false); createForm.reset(); }} style={{ padding: "9px 18px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer" }}>Cancel</button>
               <button onClick={handleCreate} disabled={saving} style={{ padding: "9px 18px", borderRadius: "8px", border: "none", background: "#25d366", color: "#fff", cursor: "pointer", fontWeight: 600, opacity: saving ? 0.7 : 1 }}>
                 {saving ? "Creating..." : "Create"}
               </button>
