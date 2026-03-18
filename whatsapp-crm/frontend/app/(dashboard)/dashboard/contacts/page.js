@@ -54,14 +54,11 @@ function ContactForm({ form, setForm, onSubmit, submitting, submitLabel, submitC
   return (
     <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <input autoFocus value={form.name || ""} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-        placeholder="Full name" required
-        style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "14px", outline: "none" }} />
+        placeholder="Full name" required style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "14px", outline: "none" }} />
       <input value={form.phone || ""} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-        placeholder="212XXXXXXXXX" required
-        style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "14px", outline: "none" }} />
+        placeholder="212XXXXXXXXX" required style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "14px", outline: "none" }} />
       <input value={form.notes || ""} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-        placeholder="Notes (optional)"
-        style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "14px", outline: "none" }} />
+        placeholder="Notes (optional)" style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "14px", outline: "none" }} />
       <button type="submit" disabled={submitting} style={{ padding: "11px", borderRadius: "8px", border: "none", background: submitColor, color: "#fff", fontWeight: "700", fontSize: "14px", cursor: "pointer" }}>
         {submitting ? "Saving..." : submitLabel}
       </button>
@@ -77,7 +74,7 @@ export default function ContactsPage() {
     selectCategory, selectList,
     createCategory, deleteCategory,
     createList, deleteList,
-    createContact, deleteContact, updateContact,
+    createContact, deleteContact, updateContact, importContacts, exportContacts,
     fetchContacts,
   } = useContacts();
 
@@ -87,10 +84,12 @@ export default function ContactsPage() {
   const [catSearch, setCatSearch] = useState("");
   const [contactSearch, setContactSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importResult, setImportResult] = useState(null);
 
   const totalContacts = lists.reduce((s, l) => s + (l.contactCount || 0), 0);
 
-  const closeModal = () => { setModal(null); setForm({}); setEditTarget(null); };
+  const closeModal = () => { setModal(null); setForm({}); setEditTarget(null); setImportFile(null); setImportResult(null); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -100,6 +99,12 @@ export default function ContactsPage() {
       if (modal === "list") await createList(form.name);
       if (modal === "contact") await createContact({ name: form.name, phone: form.phone, notes: form.notes });
       if (modal === "edit") await updateContact(editTarget._id, { name: form.name, phone: form.phone, notes: form.notes });
+      if (modal === "import") {
+        const result = await importContacts(selectedList._id, importFile);
+        setImportResult(result);
+        setImportFile(null);
+        return;
+      }
       closeModal();
     } finally {
       setSubmitting(false);
@@ -205,7 +210,11 @@ export default function ContactsPage() {
                   <span style={{ fontSize: "14px", fontWeight: "700", color: "#0F172A" }}>Contacts</span>
                   <span style={{ marginLeft: "8px", fontSize: "12px", color: "#94A3B8" }}>in {selectedList.name}</span>
                 </div>
-                <button onClick={() => { setModal("contact"); setForm({}); }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", borderRadius: "8px", border: "none", background: "#0F172A", color: "#fff", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>+ Add Contact</button>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={() => { setModal("import"); setImportFile(null); setImportResult(null); }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", background: "#fff", color: "#64748B", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>↑ Import CSV</button>
+                  <button onClick={exportContacts} disabled={!contacts.length} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", background: "#fff", color: contacts.length ? "#64748B" : "#CBD5E1", fontSize: "13px", fontWeight: "600", cursor: contacts.length ? "pointer" : "not-allowed" }}>↓ Export CSV</button>
+                  <button onClick={() => { setModal("contact"); setForm({}); }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", borderRadius: "8px", border: "none", background: "#0F172A", color: "#fff", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>+ Add Contact</button>
+                </div>
               </div>
 
               <div style={{ padding: "10px 20px", borderBottom: "1px solid #F1F5F9" }}>
@@ -311,6 +320,35 @@ export default function ContactsPage() {
       {modal === "edit" && (
         <Modal title={`Edit — ${editTarget?.name}`} onClose={closeModal}>
           <ContactForm form={form} setForm={setForm} onSubmit={handleSubmit} submitting={submitting} submitLabel="Save Changes" submitColor="#6366F1" />
+        </Modal>
+      )}
+
+      {modal === "import" && (
+        <Modal title={`Import CSV to "${selectedList?.name}"`} onClose={closeModal}>
+          {importResult ? (
+            <div style={{ textAlign: "center", padding: "16px 0" }}>
+              <div style={{ fontSize: "40px", marginBottom: "12px" }}>✅</div>
+              <div style={{ fontSize: "16px", fontWeight: "700", color: "#0F172A", marginBottom: "6px" }}>{importResult.imported} contacts imported</div>
+              <div style={{ fontSize: "13px", color: "#94A3B8", marginBottom: "20px" }}>{importResult.skipped} duplicates skipped</div>
+              <button onClick={closeModal} style={{ padding: "10px 24px", borderRadius: "8px", border: "none", background: "#25D366", color: "#fff", fontWeight: "700", cursor: "pointer" }}>Done</button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ background: "#F8FAFC", borderRadius: "8px", padding: "12px 16px", fontSize: "12px", color: "#64748B", lineHeight: 1.6 }}>
+                CSV format required:<br />
+                <code style={{ color: "#0F172A" }}>name,phone</code><br />
+                <code style={{ color: "#64748B" }}>John Doe,212600000000</code>
+              </div>
+              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px", padding: "24px", borderRadius: "10px", border: "2px dashed #E2E8F0", cursor: "pointer", background: importFile ? "#F0FDF4" : "#FAFAFA" }}>
+                <span style={{ fontSize: "28px" }}>{importFile ? "📄" : "📂"}</span>
+                <span style={{ fontSize: "13px", color: importFile ? "#15803D" : "#64748B", fontWeight: "500" }}>{importFile ? importFile.name : "Click to select CSV file"}</span>
+                <input type="file" accept=".csv" style={{ display: "none" }} onChange={(e) => setImportFile(e.target.files[0])} />
+              </label>
+              <button onClick={handleSubmit} disabled={!importFile || submitting} style={{ padding: "11px", borderRadius: "8px", border: "none", background: importFile ? "#0F172A" : "#E2E8F0", color: importFile ? "#fff" : "#94A3B8", fontWeight: "700", fontSize: "14px", cursor: importFile ? "pointer" : "not-allowed" }}>
+                {submitting ? "Importing..." : "Import"}
+              </button>
+            </div>
+          )}
         </Modal>
       )}
 

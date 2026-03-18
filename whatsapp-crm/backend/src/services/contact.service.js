@@ -1,6 +1,6 @@
 import Contact from '#models/contact.model.js'
 import ContactList from '#models/contact-list.model.js'
-import { notFound, conflict } from '#utils/app-error.js'
+import { notFound, conflict, badRequest } from '#utils/app-error.js'
 import { paginate } from '#utils/pagination.js'
 
 export const findAll = async (userId, listId, { page = 1, limit = 20 } = {}) => {
@@ -33,4 +33,32 @@ export const deleteById = async (userId, id) => {
   if (!contact) throw notFound('Contact not found')
   await Contact.findByIdAndDelete(id)
   await ContactList.findByIdAndUpdate(contact.listId, { $inc: { contactCount: -1 } })
+}
+
+export const importFromCSV = async (userId, listId, csvText) => {
+  const list = await ContactList.findOne({ _id: listId, userId })
+  if (!list) throw notFound('Contact list not found')
+
+  const lines = csvText.split('\n').map(l => l.trim()).filter(Boolean)
+  if (lines.length < 2) throw badRequest('CSV must have a header row and at least one contact')
+
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+  const nameIdx = headers.indexOf('name')
+  const phoneIdx = headers.indexOf('phone')
+  if (nameIdx === -1 || phoneIdx === -1) throw badRequest('CSV must have "name" and "phone" columns')
+
+  const rows = lines.slice(1).map(line => {
+    const cols = line.split(',')
+    return { name: cols[nameIdx]?.trim(), phone: cols[phoneIdx]?.trim() }
+  }).filter(r => r.name && r.phone)
+
+  const existingPhones = await Contact.find({ listId, phone: { $in: rows.map(r => r.phone) } }).distinct('phone')
+  const newRows = rows.filter(r => !existingPhones.includes(r.phone))
+
+  if (newRows.length === 0) return { imported: 0, skipped: rows.length }
+
+  await Contact.insertMany(newRows.map(r => ({ userId, listId, name: r.name, phone: r.phone })))
+  await ContactList.findByIdAndUpdate(listId, { $inc: { contactCount: newRows.length } })
+
+  return { imported: newRows.length, skipped: rows.length - newRows.length }
 }

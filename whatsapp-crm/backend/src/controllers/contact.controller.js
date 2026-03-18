@@ -24,3 +24,12 @@ export const deleteContact = asyncHandler(async (req, res) => {
   await ContactService.deleteById(req.user._id, req.params.id)
   successResponse(res, 200, 'Contact deleted', null)
 })
+
+export const importContacts = asyncHandler(async (req, res) => {
+  const { listId } = req.body
+  if (!listId) throw badRequest('listId is required')
+  if (!req.file) throw badRequest('CSV file is required')
+  const csvText = req.file.buffer.toString('utf-8')
+  const result = await ContactService.importFromCSV(req.user._id, listId, csvText)
+  successResponse(res, 200, `Imported ${result.imported} contacts`, result)
+})

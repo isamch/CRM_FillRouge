@@ -82,6 +82,27 @@ export function useContacts() {
     await fetchContacts(selectedList._id, pagination.page);
   };
 
+  const exportContacts = () => {
+    if (!contacts.length) return;
+    const rows = ["name,phone,notes", ...contacts.map((c) => `${c.name},${c.phone},${c.notes || ""}`)];
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${selectedList.name}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importContacts = async (listId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('listId', listId);
+    const { data } = await api.post('/contacts/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    await fetchContacts(listId, 1);
+    return data.data;
+  };
+
   const updateContact = async (id, body) => {
     await api.patch(`/contacts/${id}`, body);
     await fetchContacts(selectedList._id, pagination.page);
@@ -118,7 +139,7 @@ export function useContacts() {
     selectCategory, selectList,
     createCategory, deleteCategory,
     createList, deleteList,
-    createContact, deleteContact, updateContact,
+    createContact, deleteContact, updateContact, importContacts, exportContacts,
     fetchContacts,
   };
 }
