@@ -23,3 +23,21 @@ export const disconnect = asyncHandler(async (req, res) => {
   await WhatsappService.disconnect(req.user._id)
   successResponse(res, 200, 'Disconnected successfully', null)
 })
+
+export const getConversations = asyncHandler(async (req, res) => {
+  const conversations = await WhatsappService.getConversations(req.user._id)
+  successResponse(res, 200, 'Conversations fetched', { conversations })
+})
+
+export const getMessages = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 30 } = req.query
+  const result = await WhatsappService.getMessages(req.user._id, req.params.chatId, { page, limit })
+  successResponse(res, 200, 'Messages fetched', result)
+})
+
+export const sendMessage = asyncHandler(async (req, res) => {
+  const { body } = req.body
+  if (!body) throw notFound('Message body is required')
+  const message = await WhatsappService.sendMessage(req.user._id, req.params.chatId, body)
+  successResponse(res, 201, 'Message sent', { message })
+})

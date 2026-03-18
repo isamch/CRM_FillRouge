@@ -9,5 +9,8 @@ router.post('/connect', hasPermission(WHATSAPP_PERMISSIONS.CONNECT), WhatsappCon
 router.get('/qr', hasPermission(WHATSAPP_PERMISSIONS.READ_QR), WhatsappController.getQR)
 router.get('/status', hasPermission(WHATSAPP_PERMISSIONS.READ_STATUS), WhatsappController.getStatus)
 router.post('/disconnect', hasPermission(WHATSAPP_PERMISSIONS.DISCONNECT), WhatsappController.disconnect)
+router.get('/conversations', hasPermission(WHATSAPP_PERMISSIONS.READ_CONVERSATIONS), WhatsappController.getConversations)
+router.get('/conversations/:chatId/messages', hasPermission(WHATSAPP_PERMISSIONS.READ_CONVERSATIONS), WhatsappController.getMessages)
+router.post('/conversations/:chatId/messages', hasPermission(WHATSAPP_PERMISSIONS.SEND_MESSAGE), WhatsappController.sendMessage)
 
 export default router
