@@ -82,6 +82,18 @@ export function useContacts() {
     await fetchContacts(selectedList._id, pagination.page);
   };
 
+  const validateAllContacts = async () => {
+    const { data } = await api.post(`/contacts/validate?listId=${selectedList._id}`);
+    await fetchContacts(selectedList._id, pagination.page);
+    return data.data;
+  };
+
+  const clearInvalidContacts = async () => {
+    const { data } = await api.delete(`/contacts/clear-invalid?listId=${selectedList._id}`);
+    await fetchContacts(selectedList._id, 1);
+    return data.data;
+  };
+
   const exportContacts = () => {
     if (!contacts.length) return;
     const rows = ["name,phone,notes", ...contacts.map((c) => `${c.name},${c.phone},${c.notes || ""}`)];
@@ -139,7 +151,7 @@ export function useContacts() {
     selectCategory, selectList,
     createCategory, deleteCategory,
     createList, deleteList,
-    createContact, deleteContact, updateContact, importContacts, exportContacts,
+    createContact, deleteContact, updateContact, importContacts, exportContacts, validateAllContacts, clearInvalidContacts,
     fetchContacts,
   };
 }

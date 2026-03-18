@@ -74,7 +74,7 @@ export default function ContactsPage() {
     selectCategory, selectList,
     createCategory, deleteCategory,
     createList, deleteList,
-    createContact, deleteContact, updateContact, importContacts, exportContacts,
+    createContact, deleteContact, updateContact, importContacts, exportContacts, validateAllContacts, clearInvalidContacts,
     fetchContacts,
   } = useContacts();
 
@@ -86,10 +86,13 @@ export default function ContactsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [importResult, setImportResult] = useState(null);
+  const [validateResult, setValidateResult] = useState(null);
+  const [validating, setValidating] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const totalContacts = lists.reduce((s, l) => s + (l.contactCount || 0), 0);
 
-  const closeModal = () => { setModal(null); setForm({}); setEditTarget(null); setImportFile(null); setImportResult(null); };
+  const closeModal = () => { setModal(null); setForm({}); setEditTarget(null); setImportFile(null); setImportResult(null); setValidateResult(null); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -109,6 +112,22 @@ export default function ContactsPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleValidateAll = async () => {
+    setValidating(true);
+    try {
+      const result = await validateAllContacts();
+      setValidateResult(result);
+      setModal("validateResult");
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleClearInvalid = async () => {
+    await clearInvalidContacts();
+    setConfirmClear(false);
   };
 
   const openEdit = (c) => { setEditTarget(c); setForm({ name: c.name, phone: c.phone, notes: c.notes || "" }); setModal("edit"); };
@@ -211,8 +230,9 @@ export default function ContactsPage() {
                   <span style={{ marginLeft: "8px", fontSize: "12px", color: "#94A3B8" }}>in {selectedList.name}</span>
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button onClick={() => { setModal("import"); setImportFile(null); setImportResult(null); }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", background: "#fff", color: "#64748B", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>↑ Import CSV</button>
-                  <button onClick={exportContacts} disabled={!contacts.length} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", background: "#fff", color: contacts.length ? "#64748B" : "#CBD5E1", fontSize: "13px", fontWeight: "600", cursor: contacts.length ? "pointer" : "not-allowed" }}>↓ Export CSV</button>
+                  <button onClick={() => { setModal("import"); setImportFile(null); setImportResult(null); }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", background: "#fff", color: "#64748B", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>↑ Import</button>
+                  <button onClick={exportContacts} disabled={!contacts.length} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", background: "#fff", color: contacts.length ? "#64748B" : "#CBD5E1", fontSize: "13px", fontWeight: "600", cursor: contacts.length ? "pointer" : "not-allowed" }}>↓ Export</button>
+                  <button onClick={handleValidateAll} disabled={validating || !contacts.length} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", borderRadius: "8px", border: "none", background: validating ? "#E2E8F0" : "#6366F1", color: validating ? "#94A3B8" : "#fff", fontSize: "13px", fontWeight: "600", cursor: validating || !contacts.length ? "not-allowed" : "pointer" }}>{validating ? "Validating..." : "✓ Validate All"}</button>
                   <button onClick={() => { setModal("contact"); setForm({}); }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px", borderRadius: "8px", border: "none", background: "#0F172A", color: "#fff", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>+ Add Contact</button>
                 </div>
               </div>
@@ -277,6 +297,11 @@ export default function ContactsPage() {
                         {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
                           <button key={p} onClick={() => fetchContacts(selectedList._id, p)} style={{ width: "32px", height: "32px", borderRadius: "8px", border: `1px solid ${pagination.page === p ? "#25D366" : "#E2E8F0"}`, background: pagination.page === p ? "#25D366" : "#fff", color: pagination.page === p ? "#fff" : "#64748B", fontSize: "12px", cursor: "pointer", fontWeight: "600" }}>{p}</button>
                         ))}
+                      </div>
+                    )}
+                    {contacts.some(c => c.validationStatus === 'invalid') && (
+                      <div style={{ padding: "10px 20px", borderTop: "1px solid #F1F5F9", display: "flex", justifyContent: "flex-end" }}>
+                        <button onClick={() => setConfirmClear(true)} style={{ padding: "7px 14px", borderRadius: "8px", border: "none", background: "#FEE2E2", color: "#DC2626", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>🗑 Clear Invalid ({contacts.filter(c => c.validationStatus === 'invalid').length})</button>
                       </div>
                     )}
                   </>
@@ -349,6 +374,42 @@ export default function ContactsPage() {
               </button>
             </div>
           )}
+        </Modal>
+      )}
+
+      {modal === "validateResult" && validateResult && (
+        <Modal title="Validation Complete" onClose={closeModal}>
+          <div style={{ textAlign: "center", padding: "16px 0" }}>
+            <div style={{ fontSize: "40px", marginBottom: "16px" }}>✅</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "20px" }}>
+              <div style={{ background: "#F8FAFC", borderRadius: "10px", padding: "14px" }}>
+                <div style={{ fontSize: "22px", fontWeight: "800", color: "#0F172A" }}>{validateResult.total}</div>
+                <div style={{ fontSize: "11px", color: "#94A3B8", marginTop: "2px" }}>Total</div>
+              </div>
+              <div style={{ background: "#DCFCE7", borderRadius: "10px", padding: "14px" }}>
+                <div style={{ fontSize: "22px", fontWeight: "800", color: "#16A34A" }}>{validateResult.valid}</div>
+                <div style={{ fontSize: "11px", color: "#16A34A", marginTop: "2px" }}>Valid</div>
+              </div>
+              <div style={{ background: "#FEE2E2", borderRadius: "10px", padding: "14px" }}>
+                <div style={{ fontSize: "22px", fontWeight: "800", color: "#DC2626" }}>{validateResult.invalid}</div>
+                <div style={{ fontSize: "11px", color: "#DC2626", marginTop: "2px" }}>Invalid</div>
+              </div>
+            </div>
+            <button onClick={closeModal} style={{ padding: "10px 24px", borderRadius: "8px", border: "none", background: "#25D366", color: "#fff", fontWeight: "700", cursor: "pointer" }}>Done</button>
+          </div>
+        </Modal>
+      )}
+
+      {confirmClear && (
+        <Modal title="Clear Invalid Contacts" onClose={() => setConfirmClear(false)}>
+          <div style={{ textAlign: "center", padding: "8px 0" }}>
+            <div style={{ fontSize: "36px", marginBottom: "12px" }}>⚠️</div>
+            <p style={{ fontSize: "14px", color: "#64748B", marginBottom: "20px" }}>This will permanently delete all <strong style={{ color: "#DC2626" }}>{contacts.filter(c => c.validationStatus === "invalid").length} invalid contacts</strong> from this list.</p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+              <button onClick={() => setConfirmClear(false)} style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid #E2E8F0", background: "#fff", color: "#64748B", fontWeight: "600", cursor: "pointer" }}>Cancel</button>
+              <button onClick={handleClearInvalid} style={{ padding: "10px 20px", borderRadius: "8px", border: "none", background: "#DC2626", color: "#fff", fontWeight: "700", cursor: "pointer" }}>Delete Invalid</button>
+            </div>
+          </div>
         </Modal>
       )}
 
