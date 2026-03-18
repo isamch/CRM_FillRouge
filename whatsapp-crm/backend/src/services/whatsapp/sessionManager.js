@@ -1,6 +1,7 @@
 import pkg from 'whatsapp-web.js'
 const { Client, LocalAuth } = pkg
 import WhatsappSession from '#models/whatsapp-session.model.js'
+import Contact from '#models/contact.model.js'
 
 const clients = new Map()
 const qrCodes = new Map()
@@ -45,13 +46,19 @@ export const createClient = (userId) => {
   clients.set(userId, client)
 }
 
+export const getClient = (userId) => clients.get(userId)
+
+export const getQR = (userId) => qrCodes.get(userId)
+
+export const getStatus = (userId) => statuses.get(userId) || 'disconnected'
+
 export const validatePhones = async (userId, listId) => {
   const client = getClient(userId)
   if (!client || getStatus(userId) !== 'connected') {
     throw new Error('WhatsApp is not connected')
   }
 
-  const contacts = await (await import('#models/contact.model.js')).default.find({ userId, listId })
+  const contacts = await Contact.find({ userId, listId })
 
   let valid = 0, invalid = 0
 
@@ -69,12 +76,6 @@ export const validatePhones = async (userId, listId) => {
 
   return { total: contacts.length, valid, invalid }
 }
-
-export const getClient = (userId) => clients.get(userId)
-
-export const getQR = (userId) => qrCodes.get(userId)
-
-export const getStatus = (userId) => statuses.get(userId) || 'disconnected'
 
 export const destroyClient = async (userId) => {
   const client = clients.get(userId)
