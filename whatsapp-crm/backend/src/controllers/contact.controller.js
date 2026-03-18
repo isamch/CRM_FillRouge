@@ -2,6 +2,7 @@ import asyncHandler from '#utils/async-handler.js'
 import { successResponse } from '#utils/api-response.js'
 import { badRequest } from '#utils/app-error.js'
 import * as ContactService from '#services/contact.service.js'
+import { validatePhones } from '#services/whatsapp/sessionManager.js'
 
 export const getAllContacts = asyncHandler(async (req, res) => {
   const { listId, page, limit } = req.query
@@ -32,4 +33,11 @@ export const importContacts = asyncHandler(async (req, res) => {
   const csvText = req.file.buffer.toString('utf-8')
   const result = await ContactService.importFromCSV(req.user._id, listId, csvText)
   successResponse(res, 200, `Imported ${result.imported} contacts`, result)
+})
+
+export const validateContacts = asyncHandler(async (req, res) => {
+  const { listId } = req.query
+  if (!listId) throw badRequest('listId is required')
+  const result = await validatePhones(req.user._id.toString(), listId)
+  successResponse(res, 200, `Validated ${result.total} contacts`, result)
 })

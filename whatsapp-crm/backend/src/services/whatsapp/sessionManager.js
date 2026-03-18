@@ -45,6 +45,31 @@ export const createClient = (userId) => {
   clients.set(userId, client)
 }
 
+export const validatePhones = async (userId, listId) => {
+  const client = getClient(userId)
+  if (!client || getStatus(userId) !== 'connected') {
+    throw new Error('WhatsApp is not connected')
+  }
+
+  const contacts = await (await import('#models/contact.model.js')).default.find({ userId, listId })
+
+  let valid = 0, invalid = 0
+
+  for (const contact of contacts) {
+    try {
+      const phone = contact.phone + '@c.us'
+      const isRegistered = await client.isRegisteredUser(phone)
+      contact.validationStatus = isRegistered ? 'valid' : 'invalid'
+      await contact.save()
+      isRegistered ? valid++ : invalid++
+    } catch {
+      invalid++
+    }
+  }
+
+  return { total: contacts.length, valid, invalid }
+}
+
 export const getClient = (userId) => clients.get(userId)
 
 export const getQR = (userId) => qrCodes.get(userId)
