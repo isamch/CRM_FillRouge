@@ -11,10 +11,30 @@ export default function AdminPage() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({ name: "", email: "", password: "" });
+  const [createErrors, setCreateErrors] = useState({});
   const [notifForm, setNotifForm] = useState({ recipientId: "", subject: "", body: "" });
+  const [notifErrors, setNotifErrors] = useState({});
   const [notifSent, setNotifSent] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+
+  const validateCreate = (f) => {
+    const e = {};
+    if (!f.name.trim()) e.name = "Name is required";
+    else if (f.name.trim().length < 2) e.name = "Name must be at least 2 characters";
+    if (!f.email.trim()) e.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = "Invalid email format";
+    if (!f.password) e.password = "Password is required";
+    else if (f.password.length < 8) e.password = "Password must be at least 8 characters";
+    return e;
+  };
+
+  const validateNotif = (f) => {
+    const e = {};
+    if (!f.subject.trim()) e.subject = "Subject is required";
+    else if (f.subject.trim().length < 2) e.subject = "Subject must be at least 2 characters";
+    if (!f.body.trim()) e.body = "Message is required";
+    return e;
+  };
 
   const handleDelete = async () => {
     await deleteUser(confirmDelete);
@@ -22,31 +42,36 @@ export default function AdminPage() {
   };
 
   const handleCreate = async () => {
-    if (!createForm.name || !createForm.email || !createForm.password) return setError("All fields required");
+    const e = validateCreate(createForm);
+    if (Object.keys(e).length) return setCreateErrors(e);
     setSaving(true);
     try {
       await createUser(createForm);
       setShowCreateModal(false);
       setCreateForm({ name: "", email: "", password: "" });
-      setError("");
-    } catch (e) {
-      setError(e.response?.data?.message || "Failed to create user");
+      setCreateErrors({});
+    } catch (err) {
+      const details = err?.response?.data?.details;
+      if (details) setCreateErrors(details.reduce((acc, { field, message }) => ({ ...acc, [field.replace(/^body\./, "")]: message }), {}));
+      else setCreateErrors({ name: err.response?.data?.message || "Failed to create user" });
     } finally {
       setSaving(false);
     }
   };
 
   const handleSendNotif = async () => {
-    if (!notifForm.subject || !notifForm.body) return setError("Subject and body required");
+    const e = validateNotif(notifForm);
+    if (Object.keys(e).length) return setNotifErrors(e);
     setSaving(true);
     try {
       await sendNotification({ ...notifForm, recipientId: notifForm.recipientId || undefined });
       setNotifSent(true);
       setNotifForm({ recipientId: "", subject: "", body: "" });
-      setError("");
+      setNotifErrors({});
       setTimeout(() => setNotifSent(false), 3000);
-    } catch (e) {
-      setError(e.response?.data?.message || "Failed to send");
+    } catch (err) {
+      const details = err?.response?.data?.details;
+      if (details) setNotifErrors(details.reduce((acc, { field, message }) => ({ ...acc, [field.replace(/^body\./, "")]: message }), {}));
     } finally {
       setSaving(false);
     }
@@ -191,12 +216,13 @@ export default function AdminPage() {
             </select>
 
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>Subject</label>
-            <input value={notifForm.subject} onChange={(e) => setNotifForm({ ...notifForm, subject: e.target.value })} placeholder="Notification subject" style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }} />
+            <input value={notifForm.subject} onChange={(e) => { setNotifForm({ ...notifForm, subject: e.target.value }); setNotifErrors((p) => ({ ...p, subject: "" })); }} placeholder="Notification subject" style={{ width: "100%", padding: "10px 12px", border: `1px solid ${notifErrors.subject ? "#ef4444" : "#e5e7eb"}`, borderRadius: "8px", fontSize: "14px", marginBottom: "4px", boxSizing: "border-box" }} />
+            {notifErrors.subject && <p style={{ color: "#ef4444", fontSize: "12px", margin: "0 0 12px" }}>{notifErrors.subject}</p>}
 
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>Message</label>
-            <textarea value={notifForm.body} onChange={(e) => setNotifForm({ ...notifForm, body: e.target.value })} placeholder="Write your message..." rows={4} style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", marginBottom: "16px", boxSizing: "border-box", resize: "vertical" }} />
+            <textarea value={notifForm.body} onChange={(e) => { setNotifForm({ ...notifForm, body: e.target.value }); setNotifErrors((p) => ({ ...p, body: "" })); }} placeholder="Write your message..." rows={4} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${notifErrors.body ? "#ef4444" : "#e5e7eb"}`, borderRadius: "8px", fontSize: "14px", marginBottom: "4px", boxSizing: "border-box", resize: "vertical" }} />
+            {notifErrors.body && <p style={{ color: "#ef4444", fontSize: "12px", margin: "0 0 12px" }}>{notifErrors.body}</p>}
 
-            {error && <p style={{ color: "#ef4444", fontSize: "13px", marginBottom: "12px" }}>{error}</p>}
             {notifSent && <p style={{ color: "#10b981", fontSize: "13px", marginBottom: "12px", fontWeight: 600 }}>✓ Notification sent successfully!</p>}
 
             <button onClick={handleSendNotif} disabled={saving} style={{ padding: "10px 24px", borderRadius: "8px", border: "none", background: "#25d366", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "14px", opacity: saving ? 0.7 : 1 }}>
@@ -214,10 +240,10 @@ export default function AdminPage() {
             {["name", "email", "password"].map((field) => (
               <div key={field} style={{ marginBottom: "14px" }}>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px", textTransform: "capitalize" }}>{field}</label>
-                <input type={field === "password" ? "password" : "text"} value={createForm[field]} onChange={(e) => setCreateForm({ ...createForm, [field]: e.target.value })} style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }} />
+                <input type={field === "password" ? "password" : "text"} value={createForm[field]} onChange={(e) => { setCreateForm({ ...createForm, [field]: e.target.value }); setCreateErrors((p) => ({ ...p, [field]: "" })); }} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${createErrors[field] ? "#ef4444" : "#e5e7eb"}`, borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }} />
+                {createErrors[field] && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0" }}>{createErrors[field]}</p>}
               </div>
             ))}
-            {error && <p style={{ color: "#ef4444", fontSize: "13px", marginBottom: "12px" }}>{error}</p>}
             <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "8px" }}>
               <button onClick={() => { setShowCreateModal(false); setError(""); }} style={{ padding: "9px 18px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer" }}>Cancel</button>
               <button onClick={handleCreate} disabled={saving} style={{ padding: "9px 18px", borderRadius: "8px", border: "none", background: "#25d366", color: "#fff", cursor: "pointer", fontWeight: 600, opacity: saving ? 0.7 : 1 }}>

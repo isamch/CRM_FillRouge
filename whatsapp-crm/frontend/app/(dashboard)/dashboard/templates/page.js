@@ -19,29 +19,56 @@ function Modal({ title, onClose, children }) {
 
 function TemplateEditorModal({ template, onClose, onSave, submitting }) {
   const [form, setForm] = useState({ name: template?.name || "", body: template?.body || "" });
+  const [errors, setErrors] = useState({});
+
+  const validate = (f) => {
+    const e = {};
+    if (!f.name.trim()) e.name = "Name is required";
+    else if (f.name.trim().length < 2) e.name = "Name must be at least 2 characters";
+    if (!f.body.trim()) e.body = "Body is required";
+    else if (f.body.trim().length < 5) e.body = "Body must be at least 5 characters";
+    return e;
+  };
+
+  const handleChange = (field, value) => {
+    const updated = { ...form, [field]: value };
+    setForm(updated);
+    const e = validate(updated);
+    setErrors((prev) => ({ ...prev, [field]: e[field] || "" }));
+  };
 
   const variables = [...new Set((form.body.match(/\{\{(\w+)\}\}/g) || []).map(m => m.replace(/\{\{|\}\}/g, "")))];
-
   const preview = form.body.replace(/\{\{(\w+)\}\}/g, (_, v) => `<mark style="background:#FEF9C3;padding:1px 4px;border-radius:4px">${v}</mark>`);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(form);
+    const e2 = validate(form);
+    if (Object.values(e2).some(Boolean)) return setErrors(e2);
+    onSave(form, setErrors);
   };
+
+  const inputStyle = (field) => ({
+    padding: "10px 14px", borderRadius: "8px",
+    border: `1px solid ${errors[field] ? "#ef4444" : "#E2E8F0"}`,
+    fontSize: "14px", outline: "none", width: "100%", boxSizing: "border-box",
+  });
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-        placeholder="Template name" required autoFocus
-        style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "14px", outline: "none" }} />
+      <div>
+        <input value={form.name} onChange={(e) => handleChange("name", e.target.value)}
+          placeholder="Template name" autoFocus style={inputStyle("name")} />
+        {errors.name && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0" }}>{errors.name}</p>}
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
         <div>
           <div style={{ fontSize: "12px", fontWeight: "600", color: "#64748B", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Message Body</div>
-          <textarea value={form.body} onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
+          <textarea value={form.body} onChange={(e) => handleChange("body", e.target.value)}
             placeholder={"Hello {{name}},\n\nYour order {{orderId}} is ready!"}
-            required rows={8}
-            style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "13px", outline: "none", resize: "vertical", fontFamily: "monospace", boxSizing: "border-box" }} />
+            rows={8}
+            style={{ ...inputStyle("body"), resize: "vertical", fontFamily: "monospace" }} />
+          {errors.body && <p style={{ color: "#ef4444", fontSize: "12px", margin: "4px 0 0" }}>{errors.body}</p>}
         </div>
         <div>
           <div style={{ fontSize: "12px", fontWeight: "600", color: "#64748B", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Live Preview</div>
@@ -76,13 +103,22 @@ export default function TemplatesPage() {
 
   const filtered = templates.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()) || t.body?.toLowerCase().includes(search.toLowerCase()));
 
-  const handleSave = async (form) => {
+  const handleSave = async (form, setErrors) => {
     setSubmitting(true);
     try {
       if (modal === "create") await createTemplate(form);
       if (modal === "edit") await updateTemplate(selected._id, form);
       setModal(null);
       setSelected(null);
+    } catch (e) {
+      const details = e?.response?.data?.details;
+      if (details && setErrors) {
+        const apiErrors = details.reduce((acc, { field, message }) => {
+          acc[field.replace(/^body\./, "")] = message;
+          return acc;
+        }, {});
+        setErrors(apiErrors);
+      }
     } finally {
       setSubmitting(false);
     }
