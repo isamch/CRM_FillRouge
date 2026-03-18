@@ -1,6 +1,6 @@
 import asyncHandler from '#utils/async-handler.js'
 import { successResponse } from '#utils/api-response.js'
-import AppError from '#utils/app-error.js'
+import { notFound, badRequest } from '#utils/app-error.js'
 import * as campaignService from '#services/campaign.service.js'
 import { runCampaign, pauseCampaign, resumeCampaign, stopCampaign } from '#services/campaignEngine.js'
 
@@ -16,19 +16,19 @@ export const getCampaigns = asyncHandler(async (req, res) => {
 
 export const getCampaignById = asyncHandler(async (req, res) => {
   const campaign = await campaignService.getCampaignById(req.user._id, req.params.id)
-  if (!campaign) throw new AppError('Campaign not found', 404)
+  if (!campaign) throw notFound('Campaign not found')
   successResponse(res, 200, 'Campaign fetched', campaign)
 })
 
 export const updateCampaign = asyncHandler(async (req, res) => {
   const campaign = await campaignService.updateCampaign(req.user._id, req.params.id, req.body)
-  if (!campaign) throw new AppError('Campaign not found or cannot be updated', 404)
+  if (!campaign) throw notFound('Campaign not found or cannot be updated')
   successResponse(res, 200, 'Campaign updated', campaign)
 })
 
 export const deleteCampaign = asyncHandler(async (req, res) => {
   const campaign = await campaignService.deleteCampaign(req.user._id, req.params.id)
-  if (!campaign) throw new AppError('Campaign not found or cannot be deleted', 404)
+  if (!campaign) throw notFound('Campaign not found or cannot be deleted')
   successResponse(res, 200, 'Campaign deleted', null)
 })
 
@@ -54,14 +54,14 @@ export const stopCampaignCtrl = asyncHandler(async (req, res) => {
 
 export const scheduleCampaignCtrl = asyncHandler(async (req, res) => {
   const { scheduledAt } = req.body
-  if (!scheduledAt) throw new AppError('scheduledAt is required', 400)
+  if (!scheduledAt) throw badRequest('scheduledAt is required')
   const campaign = await campaignService.scheduleCampaign(req.user._id, req.params.id, new Date(scheduledAt))
-  if (!campaign) throw new AppError('Campaign not found or cannot be scheduled', 404)
+  if (!campaign) throw notFound('Campaign not found or cannot be scheduled')
   successResponse(res, 200, 'Campaign scheduled', campaign)
 })
 
 export const getCampaignLogs = asyncHandler(async (req, res) => {
   const result = await campaignService.getCampaignLogs(req.params.id, req.user._id, req.query)
-  if (!result) throw new AppError('Campaign not found', 404)
+  if (!result) throw notFound('Campaign not found')
   successResponse(res, 200, 'Campaign logs fetched', result)
 })
