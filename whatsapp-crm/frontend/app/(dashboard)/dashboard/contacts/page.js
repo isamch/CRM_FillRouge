@@ -83,6 +83,7 @@ export default function ContactsPage() {
   const [modal, setModal] = useState(null); // "category" | "list" | "contact"
   const [form, setForm] = useState({});
   const [catSearch, setCatSearch] = useState("");
+  const [contactSearch, setContactSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const totalContacts = lists.reduce((s, l) => s + (l.contactCount || 0), 0);
@@ -243,13 +244,29 @@ export default function ContactsPage() {
                   background: "#0F172A", color: "#fff", fontSize: "13px", fontWeight: "600", cursor: "pointer",
                 }}>+ Add Contact</button>
               </div>
+              <div style={{ padding: "10px 20px", borderBottom: "1px solid #F1F5F9" }}>
+                <input
+                  value={contactSearch}
+                  onChange={(e) => setContactSearch(e.target.value)}
+                  placeholder="Search by name or phone..."
+                  style={{ width: "100%", padding: "8px 14px", borderRadius: "8px", border: "1px solid #E2E8F0", fontSize: "13px", outline: "none", background: "#F8FAFC", boxSizing: "border-box" }}
+                />
+              </div>
 
               {loading.contacts ? (
                 <EmptyState icon="⏳" title="Loading..." />
               ) : contacts.length === 0 ? (
                 <EmptyState icon="👥" title="No contacts yet" subtitle="Add your first contact to this list" />
-              ) : (
+              ) : (() => {
+                const filtered = contacts.filter((c) =>
+                  c.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
+                  c.phone.includes(contactSearch)
+                );
+                return (
                 <>
+                  {filtered.length === 0 ? (
+                    <EmptyState icon="🔍" title="No results" subtitle={`No contacts match "${contactSearch}"`} />
+                  ) : (
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr style={{ background: "#F8FAFC" }}>
@@ -259,7 +276,7 @@ export default function ContactsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {contacts.map((c, i) => (
+                      {filtered.map((c, i) => (
                         <tr key={c._id} style={{ borderBottom: i < contacts.length - 1 ? "1px solid #F8FAFC" : "none" }}
                           onMouseEnter={(e) => e.currentTarget.style.background = "#FAFAFA"}
                           onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
@@ -293,7 +310,7 @@ export default function ContactsPage() {
                       ))}
                     </tbody>
                   </table>
-
+                  )}
                   {pagination.totalPages > 1 && (
                     <div style={{ padding: "12px 20px", borderTop: "1px solid #F1F5F9", display: "flex", gap: "6px", justifyContent: "flex-end" }}>
                       {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
@@ -308,7 +325,8 @@ export default function ContactsPage() {
                     </div>
                   )}
                 </>
-              )}
+                );
+              })()}
             </div>
           )}
         </div>
