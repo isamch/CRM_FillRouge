@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 
 export function useAdmin() {
   const [users, setUsers] = useState([]);
@@ -10,6 +11,7 @@ export function useAdmin() {
   const [usersStats, setUsersStats] = useState([]);
   const [loading, setLoading] = useState({ users: false, stats: false });
   const { loading: authLoading, user } = useAuthContext();
+  const toast = useToast();
 
   const fetchUsers = useCallback(async () => {
     setLoading((p) => ({ ...p, users: true }));
@@ -38,20 +40,24 @@ export function useAdmin() {
   const toggleStatus = async (id) => {
     await api.patch(`/users/${id}/toggle-status`);
     await fetchUsers();
+    toast({ message: "User status updated", type: "info" });
   };
 
   const deleteUser = async (id) => {
     await api.delete(`/users/${id}`);
     await fetchUsers();
+    toast({ message: "User deleted", type: "info" });
   };
 
   const createUser = async (body) => {
     await api.post("/users", body);
     await fetchUsers();
+    toast({ message: "User created successfully" });
   };
 
   const sendNotification = async (body) => {
     await api.post("/notifications", body);
+    toast({ message: "Notification sent successfully" });
   };
 
   useEffect(() => {

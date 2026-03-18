@@ -6,6 +6,7 @@ import { useWhatsappStatus } from "@/hooks/useWhatsappStatus";
 import QRDisplay from "@/components/QRDisplay";
 import ConnectionStatus from "@/components/ConnectionStatus";
 import api from "@/lib/api";
+import { useToast } from "@/contexts/ToastContext";
 
 const TABS = ["Account", "Connection"];
 
@@ -13,37 +14,36 @@ export default function SettingsPage() {
   const { user } = useAuthContext();
   const { status, qr, loading: waLoading, connect, disconnect } = useWhatsappStatus();
   const [tab, setTab] = useState(0);
+  const toast = useToast();
 
   const [profileForm, setProfileForm] = useState({ name: user?.name || "" });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
-  const [profileMsg, setProfileMsg] = useState({ text: "", error: false });
-  const [passwordMsg, setPasswordMsg] = useState({ text: "", error: false });
   const [saving, setSaving] = useState({ profile: false, password: false });
 
   const handleUpdateProfile = async () => {
-    if (!profileForm.name.trim()) return setProfileMsg({ text: "Name is required", error: true });
+    if (!profileForm.name.trim()) return toast({ message: "Name is required", type: "error" });
     setSaving((p) => ({ ...p, profile: true }));
     try {
       await api.patch("/users/me", { name: profileForm.name });
-      setProfileMsg({ text: "Profile updated successfully", error: false });
+      toast({ message: "Profile updated successfully" });
     } catch (e) {
-      setProfileMsg({ text: e.response?.data?.message || "Failed to update", error: true });
+      toast({ message: e.response?.data?.message || "Failed to update", type: "error" });
     } finally {
       setSaving((p) => ({ ...p, profile: false }));
     }
   };
 
   const handleChangePassword = async () => {
-    if (!passwordForm.currentPassword || !passwordForm.newPassword) return setPasswordMsg({ text: "All fields required", error: true });
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) return setPasswordMsg({ text: "Passwords do not match", error: true });
-    if (passwordForm.newPassword.length < 8) return setPasswordMsg({ text: "Password must be at least 8 characters", error: true });
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) return toast({ message: "All fields required", type: "error" });
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) return toast({ message: "Passwords do not match", type: "error" });
+    if (passwordForm.newPassword.length < 8) return toast({ message: "Password must be at least 8 characters", type: "error" });
     setSaving((p) => ({ ...p, password: true }));
     try {
       await api.patch("/users/me/password", { currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword });
-      setPasswordMsg({ text: "Password changed successfully", error: false });
+      toast({ message: "Password changed successfully" });
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (e) {
-      setPasswordMsg({ text: e.response?.data?.message || "Failed to change password", error: true });
+      toast({ message: e.response?.data?.message || "Failed to change password", type: "error" });
     } finally {
       setSaving((p) => ({ ...p, password: false }));
     }
@@ -75,7 +75,6 @@ export default function SettingsPage() {
             <input value={profileForm.name} onChange={(e) => setProfileForm({ name: e.target.value })} style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", marginBottom: "12px", boxSizing: "border-box" }} />
             <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>Email</label>
             <input value={user?.email || ""} disabled style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", marginBottom: "16px", boxSizing: "border-box", background: "#f9fafb", color: "#9ca3af" }} />
-            {profileMsg.text && <p style={{ color: profileMsg.error ? "#ef4444" : "#10b981", fontSize: "13px", marginBottom: "12px" }}>{profileMsg.text}</p>}
             <button onClick={handleUpdateProfile} disabled={saving.profile} style={{ padding: "9px 20px", borderRadius: "8px", border: "none", background: "#25d366", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "13px", opacity: saving.profile ? 0.7 : 1 }}>
               {saving.profile ? "Saving..." : "Save Changes"}
             </button>
@@ -94,7 +93,6 @@ export default function SettingsPage() {
                 <input type="password" value={passwordForm[key]} onChange={(e) => setPasswordForm({ ...passwordForm, [key]: e.target.value })} style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }} />
               </div>
             ))}
-            {passwordMsg.text && <p style={{ color: passwordMsg.error ? "#ef4444" : "#10b981", fontSize: "13px", marginBottom: "12px" }}>{passwordMsg.text}</p>}
             <button onClick={handleChangePassword} disabled={saving.password} style={{ padding: "9px 20px", borderRadius: "8px", border: "none", background: "#111827", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "13px", opacity: saving.password ? 0.7 : 1 }}>
               {saving.password ? "Changing..." : "Change Password"}
             </button>

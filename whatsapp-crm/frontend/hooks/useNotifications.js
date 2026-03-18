@@ -3,12 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [meta, setMeta] = useState({ page: 1, total: 0, pages: 1 });
   const [loading, setLoading] = useState(false);
   const { loading: authLoading, user } = useAuthContext();
+  const toast = useToast();
 
   const fetchInbox = useCallback(async (page = 1) => {
     setLoading(true);
@@ -29,11 +31,13 @@ export function useNotifications() {
   const markAllAsRead = async () => {
     await api.patch("/notifications/read-all");
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    toast({ message: "All notifications marked as read", type: "info" });
   };
 
   const deleteNotification = async (id) => {
     await api.delete(`/notifications/${id}`);
     setNotifications((prev) => prev.filter((n) => n._id !== id));
+    toast({ message: "Notification deleted", type: "info" });
   };
 
   useEffect(() => {

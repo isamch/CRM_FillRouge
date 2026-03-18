@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 
 export function useAuth() {
   const router = useRouter();
   const { setUser } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const toast = useToast();
 
   const login = async ({ email, password }) => {
     setIsLoading(true);
@@ -20,6 +22,7 @@ export function useAuth() {
       localStorage.setItem("refreshToken", data.data.refreshToken);
       document.cookie = `accessToken=${data.data.accessToken}; path=/; max-age=86400`;
       setUser(data.data.user);
+      toast({ message: `Welcome back, ${data.data.user.name}!` });
       router.push("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password.");
