@@ -5,7 +5,7 @@ import { paginate }      from '#utils/pagination.js'
 export const findAll = async ({ page = 1, limit = 20 } = {}) => {
   const { skip, meta } = paginate({ page, limit })
   const [data, total]  = await Promise.all([
-    User.find().skip(skip).limit(limit).lean(),
+    User.find().skip(skip).limit(meta.limit).lean(),
     User.countDocuments(),
   ])
   return { data, meta: { ...meta, total } }
@@ -24,3 +24,36 @@ export const updateById = async (id, body) => {
 }
 
 export const deleteById = async (id) => User.findByIdAndDelete(id)
+
+export const toggleStatus = async (id) => {
+  const user = await User.findById(id)
+  if (!user) return null
+  user.isActive = !user.isActive
+  await user.save()
+  return user
+}
+
+export const getPlatformStats = async () => {
+  const [totalUsers, activeUsers, totalCampaigns, totalMessages] = await Promise.all([
+    User.countDocuments(),
+    User.countDocuments({ isActive: true }),
+    (await import('#models/campaign.model.js')).default.countDocuments(),
+    User.aggregate([{ $group: { _id: null, total: { $sum: '$messageCount' } } }]),
+  ])
+  return {
+    totalUsers,
+    activeUsers,
+    totalCampaigns,
+    totalMessages: totalMessages[0]?.total || 0,
+  }
+}
+
+export const getUsersStats = async () => {
+  const Campaign = (await import('#models/campaign.model.js')).default
+  const users = await User.find().lean()
+  const stats = await Promise.all(users.map(async (u) => {
+    const campaigns = await Campaign.countDocuments({ userId: u._id })
+    return { ...u, campaignCount: campaigns }
+  }))
+  return stats
+}

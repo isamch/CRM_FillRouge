@@ -34,3 +34,19 @@ export const deleteUser = asyncHandler(async (req, res) => {
   await UserService.deleteById(req.params.id)
   successResponse(res, 200, 'User deleted successfully', null)
 })
+
+export const toggleUserStatus = asyncHandler(async (req, res) => {
+  const user = await UserService.toggleStatus(req.params.id)
+  if (!user) throw notFound('User not found')
+  successResponse(res, 200, 'User status updated', { user })
+})
+
+export const getPlatformStats = asyncHandler(async (req, res) => {
+  const stats = await UserService.getPlatformStats()
+  successResponse(res, 200, 'Platform stats fetched', stats)
+})
+
+export const getUsersStats = asyncHandler(async (req, res) => {
+  const stats = await UserService.getUsersStats()
+  successResponse(res, 200, 'Users stats fetched', { users: stats })
+})
