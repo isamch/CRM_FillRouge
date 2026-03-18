@@ -35,6 +35,17 @@ export const deleteById = async (userId, id) => {
   await ContactList.findByIdAndUpdate(contact.listId, { $inc: { contactCount: -1 } })
 }
 
+export const clearInvalidContacts = async (userId, listId) => {
+  const list = await ContactList.findOne({ _id: listId, userId })
+  if (!list) throw notFound('Contact list not found')
+
+  const result = await Contact.deleteMany({ userId, listId, validationStatus: 'invalid' })
+  const deletedCount = result.deletedCount || 0
+
+  await ContactList.findByIdAndUpdate(listId, { $inc: { contactCount: -deletedCount } })
+  return { deleted: deletedCount }
+}
+
 export const importFromCSV = async (userId, listId, csvText) => {
   const list = await ContactList.findOne({ _id: listId, userId })
   if (!list) throw notFound('Contact list not found')

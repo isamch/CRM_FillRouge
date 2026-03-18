@@ -41,3 +41,10 @@ export const validateContacts = asyncHandler(async (req, res) => {
   const result = await validatePhones(req.user._id.toString(), listId)
   successResponse(res, 200, `Validated ${result.total} contacts`, result)
 })
+
+export const clearInvalidContacts = asyncHandler(async (req, res) => {
+  const { listId } = req.query
+  if (!listId) throw badRequest('listId is required')
+  const result = await ContactService.clearInvalidContacts(req.user._id, listId)
+  successResponse(res, 200, `Deleted ${result.deleted} invalid contacts`, result)
+})

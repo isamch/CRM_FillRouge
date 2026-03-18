@@ -11,6 +11,7 @@ router.get('/', hasPermission(CONTACT_PERMISSIONS.READ), ContactController.getAl
 router.post('/', hasPermission(CONTACT_PERMISSIONS.CREATE), ContactController.createContact)
 router.post('/import', hasPermission(CONTACT_PERMISSIONS.CREATE), upload.single('file'), ContactController.importContacts)
 router.post('/validate', hasPermission(CONTACT_PERMISSIONS.UPDATE), ContactController.validateContacts)
+router.delete('/clear-invalid', hasPermission(CONTACT_PERMISSIONS.DELETE), ContactController.clearInvalidContacts)
 router.patch('/:id', hasPermission(CONTACT_PERMISSIONS.UPDATE), ContactController.updateContact)
 router.delete('/:id', hasPermission(CONTACT_PERMISSIONS.DELETE), ContactController.deleteContact)
 
