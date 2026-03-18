@@ -18,6 +18,7 @@ export function useAuth() {
       const { data } = await api.post("/auth/login", { email, password });
       localStorage.setItem("accessToken", data.data.accessToken);
       localStorage.setItem("refreshToken", data.data.refreshToken);
+      document.cookie = `accessToken=${data.data.accessToken}; path=/; max-age=86400`;
       setUser(data.data.user);
       router.push("/dashboard");
     } catch (err) {
@@ -30,6 +31,7 @@ export function useAuth() {
   const logout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    document.cookie = "accessToken=; path=/; max-age=0";
     setUser(null);
     router.push("/login");
   };

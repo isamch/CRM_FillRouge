@@ -11,18 +11,22 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    api
-      .get("/users/me")
-      .then(({ data }) => setUser(data.data.user))
-      .catch(() => {
+
+    if (!token) return setLoading(false);
+
+    const fetchUser = async () => {
+      try {
+        const { data } = await api.get("/users/me");
+        setUser(data.data.user);
+      } catch {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
   }, []);
 
   return (
