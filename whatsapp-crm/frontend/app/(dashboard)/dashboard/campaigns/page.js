@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useTemplates } from "@/hooks/useTemplates";
-import { useContacts } from "@/hooks/useContacts";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
 
 const STATUS_TABS = ["", "draft", "running", "paused", "scheduled", "completed", "stopped"];
 const STATUS_LABEL = { "": "All", draft: "Draft", running: "Running", paused: "Paused", scheduled: "Scheduled", completed: "Completed", stopped: "Stopped" };
@@ -19,7 +19,11 @@ export default function CampaignsPage() {
   const router = useRouter();
   const { campaigns, loading, statusFilter, filterByStatus, createCampaign, deleteCampaign, runCampaign } = useCampaigns();
   const { templates } = useTemplates();
-  const { lists } = useContacts();
+  const [allLists, setAllLists] = useState([]);
+
+  useEffect(() => {
+    api.get("/contact-lists").then(({ data }) => setAllLists(data.data.lists)).catch(() => {});
+  }, []);
 
   const [showWizard, setShowWizard] = useState(false);
   const [step, setStep] = useState(0);
@@ -188,7 +192,8 @@ export default function CampaignsPage() {
               <div>
                 <h2 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "20px" }}>Select Contact List</h2>
                 <div style={{ display: "grid", gap: "8px", maxHeight: "300px", overflowY: "auto" }}>
-                  {lists.map((l) => (
+                  {allLists.length === 0 && <div style={{ color: "#9ca3af", textAlign: "center", padding: "20px" }}>No lists found</div>}
+                  {allLists.map((l) => (
                     <div key={l._id} onClick={() => setForm({ ...form, listId: l._id })} style={{ padding: "14px", border: `2px solid ${form.listId === l._id ? "#25d366" : "#e5e7eb"}`, borderRadius: "8px", cursor: "pointer", background: form.listId === l._id ? "#f0fdf4" : "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontWeight: 600, color: "#111827" }}>{l.name}</span>
                       <span style={{ fontSize: "12px", color: "#6b7280" }}>{l.contactCount || 0} contacts</span>
@@ -212,7 +217,7 @@ export default function CampaignsPage() {
                 <div style={{ marginTop: "20px", padding: "16px", background: "#f9fafb", borderRadius: "8px", fontSize: "13px", color: "#374151" }}>
                   <div style={{ marginBottom: "6px" }}><strong>Name:</strong> {form.name}</div>
                   <div style={{ marginBottom: "6px" }}><strong>Template:</strong> {selectedTemplate?.name}</div>
-                  <div style={{ marginBottom: "6px" }}><strong>List:</strong> {lists.find((l) => l._id === form.listId)?.name}</div>
+                  <div style={{ marginBottom: "6px" }}><strong>List:</strong> {allLists.find((l) => l._id === form.listId)?.name}</div>
                   <div><strong>Rate:</strong> {form.ratePerMinute} msg/min</div>
                 </div>
               </div>
