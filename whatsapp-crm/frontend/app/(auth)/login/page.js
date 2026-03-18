@@ -1,31 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const [form, setForm] = useState({ email: "", password: "" });
+  const { login, isLoading, error } = useAuth();
 
   const handleChange = (e) => {
-    setError("");
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    try {
-      await new Promise((r) => setTimeout(r, 1000));
-      console.log("login:", form);
-    } catch {
-      setError("Invalid email or password.");
-    } finally {
-      setIsLoading(false);
-    }
+    await login(form);
   };
 
   return (
