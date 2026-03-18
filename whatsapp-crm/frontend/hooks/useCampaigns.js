@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 
 export function useCampaigns() {
   const [campaigns, setCampaigns] = useState([]);
@@ -10,6 +11,7 @@ export function useCampaigns() {
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const { loading: authLoading, user } = useAuthContext();
+  const toast = useToast();
 
   const fetchCampaigns = useCallback(async (status = "", page = 1) => {
     setLoading(true);
@@ -27,42 +29,50 @@ export function useCampaigns() {
   const createCampaign = async (body) => {
     const { data } = await api.post("/campaigns", body);
     await fetchCampaigns(statusFilter);
+    toast({ message: "Campaign created successfully" });
     return data.data;
   };
 
   const updateCampaign = async (id, body) => {
     await api.patch(`/campaigns/${id}`, body);
     await fetchCampaigns(statusFilter);
+    toast({ message: "Campaign updated" });
   };
 
   const deleteCampaign = async (id) => {
     await api.delete(`/campaigns/${id}`);
     await fetchCampaigns(statusFilter);
+    toast({ message: "Campaign deleted", type: "info" });
   };
 
   const runCampaign = async (id) => {
     await api.post(`/campaigns/${id}/run`);
     await fetchCampaigns(statusFilter);
+    toast({ message: "Campaign started" });
   };
 
   const pauseCampaign = async (id) => {
     await api.post(`/campaigns/${id}/pause`);
     await fetchCampaigns(statusFilter);
+    toast({ message: "Campaign paused", type: "info" });
   };
 
   const resumeCampaign = async (id) => {
     await api.post(`/campaigns/${id}/resume`);
     await fetchCampaigns(statusFilter);
+    toast({ message: "Campaign resumed" });
   };
 
   const stopCampaign = async (id) => {
     await api.post(`/campaigns/${id}/stop`);
     await fetchCampaigns(statusFilter);
+    toast({ message: "Campaign stopped", type: "info" });
   };
 
   const scheduleCampaign = async (id, scheduledAt) => {
     await api.post(`/campaigns/${id}/schedule`, { scheduledAt });
     await fetchCampaigns(statusFilter);
+    toast({ message: "Campaign scheduled" });
   };
 
   const filterByStatus = (status) => {

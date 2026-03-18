@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 
 export function useContacts() {
   const [categories, setCategories] = useState([]);
@@ -12,6 +13,7 @@ export function useContacts() {
   const [selectedList, setSelectedList] = useState(null);
   const [loading, setLoading] = useState({ categories: false, lists: false, contacts: false });
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
+  const toast = useToast();
 
   // Categories
   const fetchCategories = useCallback(async () => {
@@ -80,18 +82,43 @@ export function useContacts() {
   const createContact = async ({ name, phone, notes }) => {
     await api.post("/contacts", { name, phone, notes, listId: selectedList._id });
     await fetchContacts(selectedList._id, pagination.page);
+    toast({ message: "Contact added" });
   };
 
   const validateAllContacts = async () => {
     const { data } = await api.post(`/contacts/validate?listId=${selectedList._id}`);
     await fetchContacts(selectedList._id, pagination.page);
+    toast({ message: `Validated: ${data.data.valid} valid, ${data.data.invalid} invalid`, type: "info" });
     return data.data;
   };
 
   const clearInvalidContacts = async () => {
     const { data } = await api.delete(`/contacts/clear-invalid?listId=${selectedList._id}`);
     await fetchContacts(selectedList._id, 1);
+    toast({ message: "Invalid contacts cleared", type: "info" });
     return data.data;
+  };
+
+  const importContacts = async (listId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('listId', listId);
+    const { data } = await api.post('/contacts/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    await fetchContacts(listId, 1);
+    toast({ message: `Imported ${data.data.imported} contacts` });
+    return data.data;
+  };
+
+  const updateContact = async (id, body) => {
+    await api.patch(`/contacts/${id}`, body);
+    await fetchContacts(selectedList._id, pagination.page);
+    toast({ message: "Contact updated" });
+  };
+
+  const deleteContact = async (id) => {
+    await api.delete(`/contacts/${id}`);
+    await fetchContacts(selectedList._id, pagination.page);
+    toast({ message: "Contact deleted", type: "info" });
   };
 
   const exportContacts = () => {
@@ -104,25 +131,7 @@ export function useContacts() {
     a.download = `${selectedList.name}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const importContacts = async (listId, file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('listId', listId);
-    const { data } = await api.post('/contacts/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-    await fetchContacts(listId, 1);
-    return data.data;
-  };
-
-  const updateContact = async (id, body) => {
-    await api.patch(`/contacts/${id}`, body);
-    await fetchContacts(selectedList._id, pagination.page);
-  };
-
-  const deleteContact = async (id) => {
-    await api.delete(`/contacts/${id}`);
-    await fetchContacts(selectedList._id, pagination.page);
+    toast({ message: "Contacts exported", type: "info" });
   };
 
   // Selection handlers

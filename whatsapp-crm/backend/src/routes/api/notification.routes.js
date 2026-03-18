@@ -1,4 +1,6 @@
 import { Router } from 'express'
+import { validate } from '#middlewares/validate.middleware.js'
+import { sendNotificationSchema } from '#validations/notification.validation/sendNotification.validation.js'
 import {
   sendNotification, getInbox, getUnreadCount,
   markAsRead, markAllAsRead, deleteNotification, getSent,
@@ -6,7 +8,7 @@ import {
 
 const router = Router()
 
-router.post('/', sendNotification)
+router.post('/', validate(sendNotificationSchema), sendNotification)
 router.get('/inbox', getInbox)
 router.get('/unread-count', getUnreadCount)
 router.get('/sent', getSent)
