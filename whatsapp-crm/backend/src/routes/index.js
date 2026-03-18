@@ -10,6 +10,7 @@ import contactListRoutes from './api/contact-list.routes.js'
 import contactRoutes from './api/contact.routes.js'
 import templateRoutes from './api/template.routes.js'
 import campaignRoutes from './api/campaign.routes.js'
+import notificationRoutes from './api/notification.routes.js'
 // NEW_ROUTE_IMPORT
 
 const router = Router()
@@ -27,6 +28,7 @@ router.use('/contact-lists', contactListRoutes)
 router.use('/contacts', contactRoutes)
 router.use('/templates', templateRoutes)
 router.use('/campaigns', campaignRoutes)
+router.use('/notifications', notificationRoutes)
 // NEW_ROUTE_USE
 
 export default router
