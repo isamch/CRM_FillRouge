@@ -1,5 +1,5 @@
 import asyncHandler from '#utils/async-handler.js'
-import { unauthorized } from '#utils/app-error.js'
+import { unauthorized, forbidden } from '#utils/app-error.js'
 import { verifyAccessToken } from '#utils/jwt.js'
 import User from '#models/user.model.js'
 import Role from '#models/role.model.js'
@@ -25,5 +25,10 @@ export const protect = asyncHandler(async (req, res, next) => {
   ].filter(p => !user.revokedPermissions.includes(p))
 
   req.user = user
+  next()
+})
+
+export const checkIsActive = asyncHandler(async (req, res, next) => {
+  if (!req.user.isActive) throw forbidden('Your account has been deactivated')
   next()
 })
