@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import { protect } from '#middlewares/auth.middleware.js'
 import { hasPermission } from '#middlewares/permission.middleware.js'
 import { validate } from '#middlewares/validate.middleware.js'
 import { createUserSchema } from '#validations/user.validation/createUser.validation.js'
@@ -9,8 +8,6 @@ import { deleteUserSchema } from '#validations/user.validation/deleteUser.valida
 import * as UserController from '#controllers/user.controller.js'
 
 const router = Router()
-
-router.use(protect)
 
 router.get('/', hasPermission('users:read'), UserController.getAllUsers)
 router.get('/:id', validate(getUserByIdSchema), hasPermission('users:read'), UserController.getUser)
