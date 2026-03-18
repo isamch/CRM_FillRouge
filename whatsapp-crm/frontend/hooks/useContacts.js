@@ -82,6 +82,11 @@ export function useContacts() {
     await fetchContacts(selectedList._id, pagination.page);
   };
 
+  const updateContact = async (id, body) => {
+    await api.patch(`/contacts/${id}`, body);
+    await fetchContacts(selectedList._id, pagination.page);
+  };
+
   const deleteContact = async (id) => {
     await api.delete(`/contacts/${id}`);
     await fetchContacts(selectedList._id, pagination.page);
@@ -113,7 +118,7 @@ export function useContacts() {
     selectCategory, selectList,
     createCategory, deleteCategory,
     createList, deleteList,
-    createContact, deleteContact,
+    createContact, deleteContact, updateContact,
     fetchContacts,
   };
 }
