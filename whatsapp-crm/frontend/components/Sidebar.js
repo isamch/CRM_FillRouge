@@ -57,7 +57,7 @@ export default function Sidebar() {
               padding: "10px 12px", borderRadius: "8px", marginBottom: "4px",
               textDecoration: "none",
               background: active ? "#25D366" : "transparent",
-              color: active ? "#FFFFFF" : "#8696A0",
+              color: active ? "#FFFFFF" : "#CBD5E1",
               fontWeight: active ? "600" : "400",
               fontSize: "14px",
               transition: "all 0.15s",
@@ -74,7 +74,7 @@ export default function Sidebar() {
             padding: "10px 12px", borderRadius: "8px", marginBottom: "4px",
             textDecoration: "none",
             background: pathname === "/dashboard/admin" ? "#25D366" : "transparent",
-            color: pathname === "/dashboard/admin" ? "#FFFFFF" : "#8696A0",
+            color: pathname === "/dashboard/admin" ? "#FFFFFF" : "#CBD5E1",
             fontSize: "14px",
           }}>
             <span>🛡️</span>
@@ -88,11 +88,11 @@ export default function Sidebar() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ color: "#FFFFFF", fontSize: "13px", fontWeight: "600" }}>{user?.name}</div>
-            <div style={{ color: "#8696A0", fontSize: "11px" }}>{user?.roles?.[0]}</div>
+            <div style={{ color: "#CBD5E1", fontSize: "11px" }}>{user?.roles?.[0]}</div>
           </div>
           <button onClick={logout} style={{
             background: "transparent", border: "none", cursor: "pointer",
-            color: "#8696A0", fontSize: "18px", padding: "4px",
+            color: "#CBD5E1", fontSize: "18px", padding: "4px",
           }}>⏻</button>
         </div>
       </div>
