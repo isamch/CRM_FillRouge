@@ -1,6 +1,7 @@
 import User              from '#models/user.model.js'
-import { hashPassword }  from '#utils/hashing.js'
+import { hashPassword, comparePassword }  from '#utils/hashing.js'
 import { paginate }      from '#utils/pagination.js'
+import { unauthorized } from '#utils/app-error.js'
 
 export const findAll = async ({ page = 1, limit = 20 } = {}) => {
   const { skip, meta } = paginate({ page, limit })
@@ -24,6 +25,15 @@ export const updateById = async (id, body) => {
 }
 
 export const deleteById = async (id) => User.findByIdAndDelete(id)
+
+export const changePassword = async (id, currentPassword, newPassword) => {
+  const user = await User.findById(id).select('+password')
+  if (!user) throw unauthorized('User not found')
+  const isMatch = await comparePassword(currentPassword, user.password)
+  if (!isMatch) throw unauthorized('Current password is incorrect')
+  user.password = await hashPassword(newPassword)
+  await user.save()
+}
 
 export const toggleStatus = async (id) => {
   const user = await User.findById(id)

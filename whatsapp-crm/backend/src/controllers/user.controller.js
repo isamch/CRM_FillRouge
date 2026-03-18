@@ -7,6 +7,18 @@ export const getMe = asyncHandler(async (req, res) => {
   successResponse(res, 200, 'Profile fetched successfully', { user: req.user })
 })
 
+export const updateMe = asyncHandler(async (req, res) => {
+  const { name } = req.body
+  const user = await UserService.updateById(req.user._id, { name })
+  successResponse(res, 200, 'Profile updated', { user })
+})
+
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body
+  await UserService.changePassword(req.user._id, currentPassword, newPassword)
+  successResponse(res, 200, 'Password changed', null)
+})
+
 export const getAllUsers = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20 } = req.query
   const { data, meta } = await UserService.findAll({ page: +page, limit: +limit })

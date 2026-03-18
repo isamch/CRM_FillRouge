@@ -10,6 +10,8 @@ import * as UserController from '#controllers/user.controller.js'
 const router = Router()
 
 router.get('/me', UserController.getMe)
+router.patch('/me', UserController.updateMe)
+router.patch('/me/password', UserController.changePassword)
 router.get('/admin/stats', hasPermission('users:read'), UserController.getPlatformStats)
 router.get('/admin/users-stats', hasPermission('users:read'), UserController.getUsersStats)
 router.get('/', hasPermission('users:read'), UserController.getAllUsers)
