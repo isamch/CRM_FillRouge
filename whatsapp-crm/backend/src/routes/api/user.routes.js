@@ -9,6 +9,7 @@ import * as UserController from '#controllers/user.controller.js'
 
 const router = Router()
 
+router.get('/me', UserController.getMe)
 router.get('/', hasPermission('users:read'), UserController.getAllUsers)
 router.get('/:id', validate(getUserByIdSchema), hasPermission('users:read'), UserController.getUser)
 router.post('/', validate(createUserSchema), hasPermission('users:create'), UserController.createUser)

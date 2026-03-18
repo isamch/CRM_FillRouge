@@ -3,6 +3,10 @@ import { notFound }        from '#utils/app-error.js'
 import { successResponse } from '#utils/api-response.js'
 import * as UserService    from '#services/user.service.js'
 
+export const getMe = asyncHandler(async (req, res) => {
+  successResponse(res, 200, 'Profile fetched successfully', { user: req.user })
+})
+
 export const getAllUsers = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20 } = req.query
   const { data, meta } = await UserService.findAll({ page: +page, limit: +limit })
