@@ -7,6 +7,7 @@ import { MessageSquareIcon, EyeIcon, EyeOffIcon, LockIcon, MailIcon } from 'luci
 import Link from 'next/link'
 import { useApp } from '@/context/AppContext'
 import { handleApiError } from '@/lib/handleApiError'
+import { validateLogin } from '@/lib/validations/auth/loginValidation'
 
 export default function LoginPage() {
   const [email, setEmail]               = useState('')
@@ -18,17 +19,9 @@ export default function LoginPage() {
   const { login } = useApp()
   const router    = useRouter()
 
-  const validate = () => {
-    const e = {}
-    if (!email)    e.email    = 'Email is required'
-    else if (!/\S+@\S+\.\S+/.test(email)) e.email = 'Enter a valid email address'
-    if (!password) e.password = 'Password is required'
-    return e
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const e_ = validate()
+    const e_ = validateLogin({ email, password })
     if (Object.keys(e_).length) { setErrors(e_); return }
 
     setErrors({})

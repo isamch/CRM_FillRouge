@@ -4,7 +4,8 @@ export function handleApiError(err, { setErrors }) {
   if (err.response?.status === 422 && Array.isArray(response?.details)) {
     const fieldErrors = {}
     response.details.forEach(({ field, message }) => {
-      fieldErrors[field.replace('body.', '')] = message
+      const key = field.replace('body.', '')
+      fieldErrors[key] = message.replace(/body\./g, '')
     })
     setErrors(fieldErrors)
     return

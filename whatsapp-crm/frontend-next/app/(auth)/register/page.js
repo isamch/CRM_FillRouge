@@ -6,26 +6,25 @@ import { useRouter } from 'next/navigation'
 import { MessageSquareIcon, EyeIcon, EyeOffIcon, LockIcon, MailIcon, UserIcon, CheckIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useApp } from '@/context/AppContext'
-import { useToast } from '@/context/ToastContext'
 import { handleApiError } from '@/lib/handleApiError'
+import { validateRegister } from '@/lib/validations/auth/registerValidation'
 
 const passwordRules = [
-  { label: 'At least 8 characters',          test: (p) => p.length >= 8 },
-  { label: 'One uppercase letter',            test: (p) => /[A-Z]/.test(p) },
-  { label: 'One lowercase letter',            test: (p) => /[a-z]/.test(p) },
-  { label: 'One number',                      test: (p) => /[0-9]/.test(p) },
-  { label: 'One special character (@$!%*?&)', test: (p) => /[@$!%*?&]/.test(p) },
+  { label: 'At least 8 characters',           test: (p) => p.length >= 8 },
+  { label: 'One uppercase letter',             test: (p) => /[A-Z]/.test(p) },
+  { label: 'One lowercase letter',             test: (p) => /[a-z]/.test(p) },
+  { label: 'One number',                       test: (p) => /[0-9]/.test(p) },
+  { label: 'One special character (@$!%*?&)',  test: (p) => /[@$!%*?&]/.test(p) },
 ]
 
 export default function RegisterPage() {
-  const [form, setForm]           = useState({ name: '', email: '', password: '', confirmPassword: '' })
+  const [form, setForm]                 = useState({ name: '', email: '', password: '', confirmPassword: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm]   = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors]       = useState({})
+  const [isLoading, setIsLoading]       = useState(false)
+  const [errors, setErrors]             = useState({})
 
   const { register } = useApp()
-  const { toast }    = useToast()
   const router       = useRouter()
 
   const update = (field) => (e) => {
@@ -33,36 +32,19 @@ export default function RegisterPage() {
     setErrors((prev) => ({ ...prev, [field]: '' }))
   }
 
-  const validate = () => {
-    const e = {}
-    if (!form.name.trim())  e.name = 'Full name is required'
-    else if (form.name.trim().length < 2) e.name = 'Name must be at least 2 characters'
-
-    if (!form.email) e.email = 'Email is required'
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Enter a valid email address'
-
-    if (!form.password) e.password = 'Password is required'
-    else if (!passwordRules.every((r) => r.test(form.password)))
-      e.password = 'Password does not meet all requirements'
-
-    if (!form.confirmPassword) e.confirmPassword = 'Please confirm your password'
-    else if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match'
-
-    return e
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const e_ = validate()
+    const e_ = validateRegister(form)
     if (Object.keys(e_).length) { setErrors(e_); return }
+
     setErrors({})
     setIsLoading(true)
+
     try {
       await register({ name: form.name, email: form.email, password: form.password })
-      toast({ type: 'success', message: 'Account created! Please sign in.' })
       router.push('/login')
     } catch (err) {
-      handleApiError(err, { setErrors, toast })
+      handleApiError(err, { setErrors })
     } finally {
       setIsLoading(false)
     }
@@ -70,7 +52,6 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-page flex">
-      {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-sidebar flex-col justify-between p-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 left-0 w-96 h-96 bg-whatsapp rounded-full -translate-x-1/2 -translate-y-1/2" />
@@ -118,7 +99,6 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right Panel */}
       <div className="flex-1 flex items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -139,7 +119,6 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
               <div className="relative">
@@ -152,7 +131,6 @@ export default function RegisterPage() {
               {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
             </div>
 
-            {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
               <div className="relative">
@@ -165,7 +143,6 @@ export default function RegisterPage() {
               {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
             </div>
 
-            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <div className="relative">
@@ -193,7 +170,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1.5">Confirm password</label>
               <div className="relative">
