@@ -32,9 +32,21 @@ export const createClient = (userId) => {
     )
   })
 
+  client.on('auth_failure', async () => {
+    statuses.set(userId, 'disconnected')
+    clients.delete(userId)
+    qrCodes.delete(userId)
+    await WhatsappSession.findOneAndUpdate(
+      { userId },
+      { status: 'disconnected', disconnectedAt: new Date() },
+      { upsert: true }
+    )
+  })
+
   client.on('disconnected', async () => {
     statuses.set(userId, 'disconnected')
     clients.delete(userId)
+    qrCodes.delete(userId)
     await WhatsappSession.findOneAndUpdate(
       { userId },
       { status: 'disconnected', disconnectedAt: new Date() },
@@ -44,6 +56,13 @@ export const createClient = (userId) => {
 
   client.initialize()
   clients.set(userId, client)
+}
+
+export const restoreAllSessions = async () => {
+  const sessions = await WhatsappSession.find({ status: 'connected' })
+  for (const session of sessions) {
+    createClient(session.userId.toString())
+  }
 }
 
 export const getClient = (userId) => clients.get(userId)
@@ -64,7 +83,7 @@ export const validatePhones = async (userId, listId) => {
 
   for (const contact of contacts) {
     try {
-      const phone = contact.phone + '@c.us'
+      const phone = contact.phone.replace(/^\+/, '') + '@c.us'
       const isRegistered = await client.isRegisteredUser(phone)
       contact.validationStatus = isRegistered ? 'valid' : 'invalid'
       await contact.save()
