@@ -10,6 +10,7 @@ export function AppProvider({ children }) {
   const [user, setUser]                   = useState(null)
   const [sessionStatus, setSessionStatus] = useState('disconnected')
   const [authLoading, setAuthLoading]     = useState(true)
+  const [unreadConversations, setUnreadConversations] = useState(0)
   const pollRef = useRef(null)
 
   useEffect(() => {
@@ -54,10 +55,11 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      user, authLoading,
+      user, setUser, authLoading,
       login, register, logout,
       isAuthenticated: !!user,
       sessionStatus, setSessionStatus,
+      unreadConversations, setUnreadConversations,
     }}>
       {children}
     </AppContext.Provider>

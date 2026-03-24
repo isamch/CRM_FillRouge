@@ -1,15 +1,87 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { UserIcon, LockIcon, SmartphoneIcon, ShieldAlertIcon } from 'lucide-react'
+import { UserIcon, LockIcon, SmartphoneIcon, ShieldAlertIcon, Loader2Icon } from 'lucide-react'
 import { useApp } from '@/context/AppContext'
 import { PageHeader, FormField } from '@/components/ui'
+import { updateProfile, changePassword } from '@/lib/settings'
+import { getWhatsappProfile, disconnectWhatsapp } from '@/lib/whatsapp'
+import { useAlert } from '@/context/AlertContext'
+import { saveUser } from '@/lib/auth'
 
 export default function SettingsPage() {
-  const { user, sessionStatus, setSessionStatus } = useApp()
+  const { user, sessionStatus, setSessionStatus, setUser } = useApp()
   const currentUser = user || {}
   const router = useRouter()
+  const { showAlert } = useAlert()
+
+  const [name, setName]                   = useState(currentUser.name || '')
+  const [savingProfile, setSavingProfile] = useState(false)
+
+  const [currentPassword, setCurrentPassword]   = useState('')
+  const [newPassword, setNewPassword]           = useState('')
+  const [confirmPassword, setConfirmPassword]   = useState('')
+  const [savingPassword, setSavingPassword]     = useState(false)
+
+  const [waProfile, setWaProfile]         = useState(null)
+  const [disconnecting, setDisconnecting] = useState(false)
+
+  useEffect(() => {
+    if (sessionStatus !== 'connected') { setWaProfile(null); return }
+    getWhatsappProfile()
+      .then(res => setWaProfile(res.data?.profile || null))
+      .catch(() => {})
+  }, [sessionStatus])
+
+  const handleDisconnect = async () => {
+    setDisconnecting(true)
+    try {
+      await disconnectWhatsapp()
+      setSessionStatus('disconnected')
+      setWaProfile(null)
+      showAlert('WhatsApp disconnected', 'success')
+    } catch {
+      showAlert('Failed to disconnect', 'error')
+    } finally {
+      setDisconnecting(false)
+    }
+  }
+
+  const handleSaveProfile = async () => {
+    if (!name.trim()) return
+    setSavingProfile(true)
+    try {
+      const res = await updateProfile({ name })
+      const updated = { ...currentUser, ...res.data?.user, name }
+      saveUser(updated)
+      setUser(updated)
+      showAlert('Profile updated successfully', 'success')
+    } catch {
+      showAlert('Failed to update profile', 'error')
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) return
+    if (newPassword !== confirmPassword) { showAlert('Passwords do not match', 'error'); return }
+    if (newPassword.length < 6) { showAlert('Password must be at least 6 characters', 'error'); return }
+    setSavingPassword(true)
+    try {
+      await changePassword(currentPassword, newPassword)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      showAlert('Password changed successfully', 'success')
+    } catch (err) {
+      showAlert(err?.response?.data?.message || 'Failed to change password', 'error')
+    } finally {
+      setSavingPassword(false)
+    }
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 max-w-4xl mx-auto">
@@ -31,14 +103,26 @@ export default function SettingsPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField label="Username">
-                <input type="text" defaultValue={currentUser.username} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none"
+                />
               </FormField>
               <FormField label="Email Address">
                 <input type="email" defaultValue={currentUser.email} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none bg-gray-50" readOnly />
               </FormField>
             </div>
             <div className="flex justify-end pt-2">
-              <button className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer">Save Changes</button>
+              <button
+                onClick={handleSaveProfile}
+                disabled={savingProfile || !name.trim()}
+                className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {savingProfile && <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />}
+                Save Changes
+              </button>
             </div>
           </div>
         </div>
@@ -52,12 +136,27 @@ export default function SettingsPage() {
           <div className="p-6">
             {sessionStatus === 'connected' ? (
               <div className="flex flex-col md:flex-row md:items-center justify-between bg-green-50 border border-green-100 rounded-lg p-5">
-                <div>
-                  <div className="flex items-center mb-1"><span className="flex h-2.5 w-2.5 bg-whatsapp rounded-full mr-2"></span><h3 className="font-semibold text-green-800">Connected</h3></div>
-                  <p className="text-sm text-green-700">Your account is linked to <strong className="font-mono">+1 (555) 123-4567</strong></p>
+                <div className="flex items-center">
+                  <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mr-4 border-2 border-green-200">
+                    <SmartphoneIcon className="w-6 h-6 text-green-500" />
+                  </div>
+                  <div>
+                    <div className="flex items-center mb-1"><span className="flex h-2.5 w-2.5 bg-whatsapp rounded-full mr-2"></span><h3 className="font-semibold text-green-800">Connected</h3></div>
+                    {waProfile && (
+                      <>
+                        <p className="text-sm font-medium text-green-900">{waProfile.name}</p>
+                        <p className="text-sm text-green-700 font-mono">+{waProfile.number}</p>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <button onClick={() => setSessionStatus('disconnected')} className="mt-4 md:mt-0 px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors flex items-center cursor-pointer">
-                  <ShieldAlertIcon className="w-4 h-4 mr-2" /> Disconnect Device
+                <button
+                  onClick={handleDisconnect}
+                  disabled={disconnecting}
+                  className="mt-4 md:mt-0 px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors flex items-center cursor-pointer disabled:opacity-50"
+                >
+                  {disconnecting ? <Loader2Icon className="w-4 h-4 mr-2 animate-spin" /> : <ShieldAlertIcon className="w-4 h-4 mr-2" />}
+                  Disconnect Device
                 </button>
               </div>
             ) : (
@@ -66,7 +165,7 @@ export default function SettingsPage() {
                   <div className="flex items-center mb-1"><span className="flex h-2.5 w-2.5 bg-gray-400 rounded-full mr-2"></span><h3 className="font-semibold text-gray-700">Disconnected</h3></div>
                   <p className="text-sm text-gray-500">Connect your WhatsApp to start sending campaigns.</p>
                 </div>
-                <button onClick={() => router.push('/')} className="mt-4 md:mt-0 px-4 py-2 bg-whatsapp text-white rounded-lg text-sm font-medium hover:bg-whatsapp-hover transition-colors cursor-pointer">Go to Dashboard to Connect</button>
+                <button onClick={() => router.push('/dashboard')} className="mt-4 md:mt-0 px-4 py-2 bg-whatsapp text-white rounded-lg text-sm font-medium hover:bg-whatsapp-hover transition-colors cursor-pointer">Go to Dashboard to Connect</button>
               </div>
             )}
           </div>
@@ -81,18 +180,25 @@ export default function SettingsPage() {
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField label="Current Password">
-                <input type="password" placeholder="••••••••" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
+                <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
               </FormField>
               <div className="hidden md:block"></div>
               <FormField label="New Password">
-                <input type="password" placeholder="••••••••" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
               </FormField>
               <FormField label="Confirm New Password">
-                <input type="password" placeholder="••••••••" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
+                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
               </FormField>
             </div>
             <div className="flex justify-end pt-2">
-              <button className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer">Update Password</button>
+              <button
+                onClick={handleChangePassword}
+                disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
+                className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {savingPassword && <Loader2Icon className="w-4 h-4 mr-2 animate-spin" />}
+                Update Password
+              </button>
             </div>
           </div>
         </div>

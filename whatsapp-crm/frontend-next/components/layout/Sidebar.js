@@ -7,7 +7,6 @@ import {
   SmartphoneIcon, WifiIcon, WifiOffIcon,
 } from 'lucide-react'
 import { useApp } from '@/context/AppContext'
-import { mockNotifications, mockConversations } from '@/data/mockData'
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboardIcon, href: '/dashboard' },
@@ -27,11 +26,10 @@ const adminItems = [
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, sessionStatus, logout } = useApp()
+  const { user, sessionStatus, logout, unreadConversations } = useApp()
   const currentUser = user || { name: '', email: '', roles: [] }
 
-  const unreadNotifications = mockNotifications.filter((n) => !n.isRead).length
-  const unreadMessages = mockConversations.reduce((acc, curr) => acc + curr.unreadCount, 0)
+  const unreadNotifications = 0
 
   const isActive = (href) => {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -41,7 +39,7 @@ export default function Sidebar() {
   const renderNavItem = (item) => {
     const active = isActive(item.href)
     const Icon = item.icon
-    const badge = item.href === '/conversations' ? unreadMessages : item.href === '/notifications' ? unreadNotifications : 0
+    const badge = item.href === '/conversations' ? unreadConversations : item.href === '/notifications' ? unreadNotifications : 0
 
     return (
       <button

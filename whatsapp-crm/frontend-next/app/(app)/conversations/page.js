@@ -22,12 +22,16 @@ export default function ConversationsPage() {
 
   const messagesEndRef = useRef(null)
   const { showAlert } = useAlert()
-  const { sessionStatus } = useApp()
+  const { sessionStatus, setUnreadConversations } = useApp()
 
   useEffect(() => {
     if (sessionStatus !== 'connected') { setLoadingConvs(false); return }
     getConversations()
-      .then(res => setConversations(res.data?.conversations || []))
+      .then(res => {
+        const convs = res.data?.conversations || []
+        setConversations(convs)
+        setUnreadConversations(convs.reduce((acc, c) => acc + (c.unreadCount || 0), 0))
+      })
       .catch(() => showAlert('Failed to load conversations', 'error'))
       .finally(() => setLoadingConvs(false))
   }, [sessionStatus])
@@ -149,13 +153,9 @@ export default function ConversationsPage() {
                   className={`w-full flex items-center p-3 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left ${isSelected ? 'bg-green-50/50' : ''}`}
                 >
                   <div className="relative mr-3 flex-shrink-0">
-                    {conv.avatar ? (
-                      <img src={conv.avatar} alt={name} className="w-12 h-12 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium text-lg">
-                        {getInitial(name)}
-                      </div>
-                    )}
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium text-lg">
+                      {getInitial(name)}
+                    </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline mb-1">
@@ -183,13 +183,9 @@ export default function ConversationsPage() {
 
           <div className="h-16 bg-gray-50 border-b border-gray-200 px-6 flex items-center justify-between z-10 flex-shrink-0">
             <div className="flex items-center">
-              {selectedConv.avatar ? (
-                <img src={selectedConv.avatar} alt={selectedConv.name} className="w-10 h-10 rounded-full object-cover mr-3" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium mr-3">
-                  {getInitial(selectedConv.name)}
-                </div>
-              )}
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium mr-3">
+                {getInitial(selectedConv.name)}
+              </div>
               <div>
                 <h2 className="font-semibold text-gray-900 leading-tight">{selectedConv.name || selectedConv.id}</h2>
                 <p className="text-xs text-gray-500">{selectedConv.id}</p>

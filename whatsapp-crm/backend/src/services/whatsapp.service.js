@@ -16,6 +16,17 @@ export const getStatus = (userId) => {
   return sessionManager.getStatus(userId.toString())
 }
 
+export const getProfile = async (userId) => {
+  const client = sessionManager.getClient(userId.toString())
+  if (!client || sessionManager.getStatus(userId.toString()) !== 'connected') return null
+
+  const info = client.info
+  return {
+    name:   info.pushname,
+    number: info.wid.user,
+  }
+}
+
 export const disconnect = async (userId) => {
   await sessionManager.destroyClient(userId.toString())
 }
@@ -27,19 +38,14 @@ export const getConversations = async (userId) => {
   const allChats = await sessionManager.getChats(userId.toString())
 
   return Promise.all(
-    allChats.map(async (chat) => {
-      let avatar = null
-      try { avatar = await client.getProfilePicUrl(chat.id._serialized) } catch {}
-      return {
-        id:              chat.id._serialized,
-        name:            chat.name,
-        avatar,
-        lastMessage:     chat.lastMessage?.body || '',
-        lastMessageTime: chat.lastMessage?.timestamp ? new Date(chat.lastMessage.timestamp * 1000) : null,
-        unreadCount:     chat.unreadCount,
-        isGroup:         chat.isGroup,
-      }
-    })
+    allChats.map(async (chat) => ({
+      id:              chat.id._serialized,
+      name:            chat.name,
+      lastMessage:     chat.lastMessage?.body || '',
+      lastMessageTime: chat.lastMessage?.timestamp ? new Date(chat.lastMessage.timestamp * 1000) : null,
+      unreadCount:     chat.unreadCount,
+      isGroup:         chat.isGroup,
+    }))
   )
 }
 

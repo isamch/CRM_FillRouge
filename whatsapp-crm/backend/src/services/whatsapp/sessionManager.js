@@ -111,13 +111,24 @@ export const getChats = async (userId) => {
 
   const cached = chatsCache.get(userId)
   const isValid = cached && (Date.now() - cached.cachedAt) < CACHE_TTL
+  if (isValid) return cached.chats
 
-  if (isValid) return cached.chats  // return from cache
-
-  // cache miss or expired → fetch fresh
-  const chats = await client.getChats()
-  chatsCache.set(userId, { chats, cachedAt: Date.now() })
-  return chats
+  try {
+    const chats = await client.getChats()
+    chatsCache.set(userId, { chats, cachedAt: Date.now() })
+    return chats
+  } catch {
+    // browser crashed or detached — clean up
+    clients.delete(userId)
+    chatsCache.delete(userId)
+    statuses.set(userId, 'disconnected')
+    await WhatsappSession.findOneAndUpdate(
+      { userId },
+      { status: 'disconnected', disconnectedAt: new Date() },
+      { upsert: true }
+    )
+    return []
+  }
 }
 
 export const destroyClient = async (userId) => {

@@ -19,6 +19,12 @@ export const getStatus = asyncHandler(async (req, res) => {
   successResponse(res, 200, 'Status fetched', { status })
 })
 
+export const getProfile = asyncHandler(async (req, res) => {
+  const profile = await WhatsappService.getProfile(req.user._id)
+  if (!profile) throw notFound('WhatsApp not connected')
+  successResponse(res, 200, 'Profile fetched', { profile })
+})
+
 export const disconnect = asyncHandler(async (req, res) => {
   await WhatsappService.disconnect(req.user._id)
   successResponse(res, 200, 'Disconnected successfully', null)
