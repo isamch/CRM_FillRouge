@@ -1,15 +1,14 @@
-export function handleApiError(err, { setErrors }) {
+export function handleApiError(err, { setErrors, showAlert }) {
   const response = err.response?.data
 
   if (err.response?.status === 422 && Array.isArray(response?.details)) {
     const fieldErrors = {}
     response.details.forEach(({ field, message }) => {
-      const key = field.replace('body.', '')
-      fieldErrors[key] = message.replace(/body\./g, '')
+      fieldErrors[field.replace('body.', '')] = message.replace(/body\./g, '')
     })
     setErrors(fieldErrors)
     return
   }
 
-  alert(response?.message || 'Something went wrong. Please try again.')
+  showAlert(response?.message || 'Something went wrong. Please try again.', 'error')
 }

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { MessageSquareIcon, EyeIcon, EyeOffIcon, LockIcon, MailIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useApp } from '@/context/AppContext'
+import { useAlert } from '@/context/AlertContext'
 import { handleApiError } from '@/lib/handleApiError'
 import { validateLogin } from '@/lib/validations/auth/loginValidation'
 
@@ -16,8 +17,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading]       = useState(false)
   const [errors, setErrors]             = useState({})
 
-  const { login } = useApp()
-  const router    = useRouter()
+  const { login }     = useApp()
+  const { showAlert } = useAlert()
+  const router        = useRouter()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -31,7 +33,7 @@ export default function LoginPage() {
       await login({ email, password })
       router.push('/dashboard')
     } catch (err) {
-      handleApiError(err, { setErrors })
+      handleApiError(err, { setErrors, showAlert })
     } finally {
       setIsLoading(false)
     }
