@@ -9,6 +9,7 @@ import {
 import { getConversations, getMessages, sendMessage } from '@/lib/conversations'
 import { useAlert } from '@/context/AlertContext'
 import { useApp } from '@/context/AppContext'
+import WhatsAppRequired from '@/components/WhatsAppRequired'
 
 export default function ConversationsPage() {
   const [conversations, setConversations] = useState([])
@@ -102,20 +103,9 @@ export default function ConversationsPage() {
     (c.id || '').includes(searchQuery)
   )
 
-  if (sessionStatus !== 'connected' && !loadingConvs) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center bg-gray-50">
-        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-          <MessageSquareIcon className="w-10 h-10 text-gray-300" />
-        </div>
-        <h2 className="text-2xl font-light text-gray-600 mb-2">WhatsApp Not Connected</h2>
-        <p className="text-gray-400 text-sm">Please connect your WhatsApp from the Dashboard first.</p>
-      </div>
-    )
-  }
-
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex bg-white">
+    <WhatsAppRequired>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex bg-white">
 
       {/* Conversation List */}
       <div className="w-[350px] flex-shrink-0 border-r border-gray-200 flex flex-col bg-white z-10">
@@ -260,5 +250,6 @@ export default function ConversationsPage() {
         </div>
       )}
     </motion.div>
+    </WhatsAppRequired>
   )
 }

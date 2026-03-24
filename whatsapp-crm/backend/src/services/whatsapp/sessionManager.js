@@ -1,5 +1,7 @@
 import pkg from 'whatsapp-web.js'
 const { Client, LocalAuth } = pkg
+import fs from 'fs'
+import path from 'path'
 import WhatsappSession from '#models/whatsapp-session.model.js'
 import Contact from '#models/contact.model.js'
 
@@ -134,10 +136,33 @@ export const getChats = async (userId) => {
 export const destroyClient = async (userId) => {
   const client = clients.get(userId)
   if (client) {
-    await client.destroy()
+    try {
+      await client.logout()
+    } catch (e) {
+      try { await client.destroy() } catch (err) {}
+    }
+
     clients.delete(userId)
     qrCodes.delete(userId)
     chatsCache.delete(userId)
     statuses.set(userId, 'disconnected')
+
+    // Forcefully remove the auth folder to ensure a clean slate for next connection
+    try {
+      const authPath = path.join(process.cwd(), '.wwebjs_auth', `session-${userId}`)
+      if (fs.existsSync(authPath)) {
+        fs.rmSync(authPath, { recursive: true, force: true })
+      }
+    } catch (e) {
+      console.error('Failed to remove auth folder:', e)
+    }
+
+    try {
+      await WhatsappSession.findOneAndUpdate(
+        { userId },
+        { status: 'disconnected', disconnectedAt: new Date() },
+        { upsert: true }
+      )
+    } catch (e) {}
   }
 }

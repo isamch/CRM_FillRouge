@@ -14,6 +14,7 @@ import {
   getContacts, createContact, updateContact, deleteContact,
   validateContacts, clearInvalid, importContacts,
 } from '@/lib/contacts'
+import WhatsAppRequired from '@/components/WhatsAppRequired'
 
 // ─── Small Modal ─────────────────────────────────────────────────
 function Modal({ title, onClose, children }) {
@@ -252,6 +253,7 @@ export default function ContactsPage() {
   )
 
   return (
+    <WhatsAppRequired>
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex">
 
       {/* ── Sidebar ── */}
@@ -469,5 +471,6 @@ export default function ContactsPage() {
       )}
 
     </motion.div>
+    </WhatsAppRequired>
   )
 }

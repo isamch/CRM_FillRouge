@@ -6,6 +6,7 @@ import { PlusIcon, SearchIcon, CopyIcon, EditIcon, Trash2Icon, MessageSquareIcon
 import { SearchInput } from '@/components/ui'
 import { useAlert } from '@/context/AlertContext'
 import { getTemplates, createTemplate, updateTemplate, deleteTemplate } from '@/lib/templates'
+import WhatsAppRequired from '@/components/WhatsAppRequired'
 
 export default function TemplatesPage() {
   const [templates, setTemplates]           = useState([])
@@ -120,6 +121,7 @@ export default function TemplatesPage() {
       .replace(/\{\{[^}]+\}\}/g, '[Value]')
 
   return (
+    <WhatsAppRequired>
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex p-6 space-x-6 max-w-[1600px] mx-auto">
 
       {/* Template List */}
@@ -294,5 +296,6 @@ export default function TemplatesPage() {
         </div>
       )}
     </motion.div>
+    </WhatsAppRequired>
   )
 }

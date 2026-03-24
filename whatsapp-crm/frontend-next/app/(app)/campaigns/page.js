@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { mockCampaigns, mockTemplates, mockContactLists } from '@/data/mockData'
 import { Badge, SearchInput, PageHeader } from '@/components/ui'
+import WhatsAppRequired from '@/components/WhatsAppRequired'
 
 function getStatusBadge(status) {
   return <Badge status={status} />
@@ -24,6 +25,7 @@ export default function CampaignsPage() {
   if (isCreating) return <CampaignCreate onCancel={() => setIsCreating(false)} />
 
   return (
+    <WhatsAppRequired>
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 max-w-7xl mx-auto h-full flex flex-col">
       <PageHeader
         title="Campaigns"
@@ -93,6 +95,7 @@ export default function CampaignsPage() {
         </div>
       </div>
     </motion.div>
+    </WhatsAppRequired>
   )
 }
 

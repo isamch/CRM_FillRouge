@@ -11,6 +11,7 @@ import {
 import { useApp } from '@/context/AppContext'
 import { useAlert } from '@/context/AlertContext'
 import { StatCard, Modal } from '@/components/ui'
+import WhatsAppRequired from '@/components/WhatsAppRequired'
 import { connectWhatsapp, getWhatsappQR, getWhatsappStatus, disconnectWhatsapp } from '@/lib/whatsapp'
 import api from '@/lib/api'
 
@@ -131,6 +132,7 @@ export default function DashboardPage() {
         )}
       </div>
 
+      <WhatsAppRequired>
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard title="Total Messages"   value={statsLoading ? '...' : (stats?.messageCount  ?? 0).toLocaleString()} icon={MessageSquareIcon} />
@@ -225,6 +227,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      </WhatsAppRequired>
 
       {/* QR Modal */}
       {showQrModal && (
