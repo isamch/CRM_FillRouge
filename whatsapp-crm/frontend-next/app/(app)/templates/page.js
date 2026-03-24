@@ -1,20 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { PlusIcon, SearchIcon, CopyIcon, EditIcon, Trash2Icon, MessageSquareIcon, AlertCircleIcon, BookOpenIcon } from 'lucide-react'
-import { mockTemplates } from '@/data/mockData'
+import { PlusIcon, SearchIcon, CopyIcon, EditIcon, Trash2Icon, MessageSquareIcon, AlertCircleIcon, BookOpenIcon, Loader2Icon } from 'lucide-react'
 import { SearchInput } from '@/components/ui'
+import { useAlert } from '@/context/AlertContext'
+import { getTemplates, createTemplate, updateTemplate, deleteTemplate } from '@/lib/templates'
 
 export default function TemplatesPage() {
-  const [searchQuery, setSearchQuery] = useState('')
+  const [templates, setTemplates]           = useState([])
+  const [loading, setLoading]               = useState(true)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
-  const [isEditing, setIsEditing] = useState(false)
-  const [name, setName] = useState('')
-  const [body, setBody] = useState('')
+  const [isEditing, setIsEditing]           = useState(false)
+  const [saving, setSaving]                 = useState(false)
+  const [deleteTarget, setDeleteTarget]     = useState(null)
+  const [searchQuery, setSearchQuery]       = useState('')
+  const [name, setName]                     = useState('')
+  const [body, setBody]                     = useState('')
+  const { showAlert } = useAlert()
 
-  const filteredTemplates = mockTemplates.filter(
-    (t) => t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.body.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    getTemplates(1, 100)
+      .then(res => setTemplates(res.data?.data || []))
+      .catch(() => showAlert('Failed to load templates', 'error'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filteredTemplates = templates.filter(
+    t => t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         t.body.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const handleSelectTemplate = (template) => {
@@ -24,14 +38,74 @@ export default function TemplatesPage() {
     setIsEditing(true)
   }
 
+  const DRAFT_ID = '__draft__'
+
   const handleNewTemplate = () => {
-    setSelectedTemplate(null)
-    setName('')
+    const draft = { _id: DRAFT_ID, name: 'Untitled Template', body: '', variables: [], createdAt: new Date().toISOString() }
+    setTemplates(prev => prev.some(t => t._id === DRAFT_ID) ? prev : [draft, ...prev])
+    setSelectedTemplate(draft)
+    setName('Untitled Template')
     setBody('')
     setIsEditing(true)
   }
 
-  const insertVariable = (variable) => setBody((prev) => prev + `{{${variable}}}`)
+  const handleCancel = () => {
+    setTemplates(prev => prev.filter(t => t._id !== DRAFT_ID))
+    setIsEditing(false)
+    setSelectedTemplate(null)
+    setName('')
+    setBody('')
+  }
+
+  const handleSave = async () => {
+    const finalName = name.trim() || 'Untitled Template'
+    const finalBody = body.trim() || 'Hello {{name}}, this is a message from us.'
+    setSaving(true)
+    try {
+      if (selectedTemplate && selectedTemplate._id !== DRAFT_ID) {
+        const res = await updateTemplate(selectedTemplate._id, { name: finalName, body: finalBody })
+        setTemplates(prev => prev.map(t => t._id === selectedTemplate._id ? res.data.template : t))
+        setSelectedTemplate(res.data.template)
+        showAlert('Template updated', 'success')
+      } else {
+        const res = await createTemplate({ name: finalName, body: finalBody })
+        setTemplates(prev => prev.map(t => t._id === DRAFT_ID ? res.data.template : t))
+        setSelectedTemplate(res.data.template)
+        showAlert('Template created', 'success')
+      }
+      setIsEditing(false)
+    } catch (err) {
+      showAlert(err.message || 'Failed to save template', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDuplicate = async (t, e) => {
+    e.stopPropagation()
+    try {
+      const res = await createTemplate({ name: `${t.name} (copy)`, body: t.body })
+      setTemplates(prev => [res.data.template, ...prev])
+      showAlert('Template duplicated', 'success')
+    } catch {
+      showAlert('Failed to duplicate', 'error')
+    }
+  }
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteTemplate(deleteTarget._id)
+      setTemplates(prev => prev.filter(t => t._id !== deleteTarget._id))
+      if (selectedTemplate?._id === deleteTarget._id) handleCancel()
+      showAlert('Template deleted', 'success')
+    } catch {
+      showAlert('Failed to delete', 'error')
+    } finally {
+      setDeleteTarget(null)
+    }
+  }
+
+  const insertVariable = (variable) => setBody(prev => prev + `{{${variable}}}`)
 
   const generatePreview = (text) =>
     text
@@ -47,32 +121,62 @@ export default function TemplatesPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex p-6 space-x-6 max-w-[1600px] mx-auto">
+
       {/* Template List */}
       <div className="w-1/3 min-w-[350px] flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
           <h2 className="text-lg font-semibold text-gray-900">Message Templates</h2>
-          <button onClick={handleNewTemplate} className="p-2 bg-whatsapp text-white rounded-lg hover:bg-whatsapp-hover transition-colors shadow-sm cursor-pointer"><PlusIcon className="w-4 h-4" /></button>
+          <button onClick={handleNewTemplate} className="p-2 bg-whatsapp text-white rounded-lg hover:bg-whatsapp-hover transition-colors shadow-sm cursor-pointer">
+            <PlusIcon className="w-4 h-4" />
+          </button>
         </div>
         <div className="p-4 border-b border-gray-100">
           <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search templates..." />
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {filteredTemplates.map((template) => (
-            <div key={template.id} onClick={() => handleSelectTemplate(template)} className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${selectedTemplate?.id === template.id ? 'bg-green-50 border-l-4 border-l-whatsapp' : 'hover:bg-gray-50 border-l-4 border-l-transparent'}`}>
-              <div className="flex justify-between items-start mb-1">
-                <h3 className="font-medium text-gray-900">{template.name}</h3>
-                <div className="flex space-x-1">
-                  <button className="p-1 text-gray-400 hover:text-blue-600 cursor-pointer"><CopyIcon className="w-3.5 h-3.5" /></button>
-                  <button className="p-1 text-gray-400 hover:text-red-600 cursor-pointer"><Trash2Icon className="w-3.5 h-3.5" /></button>
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-gray-400">
+              <Loader2Icon className="w-6 h-6 animate-spin" />
+            </div>
+          ) : filteredTemplates.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+              <BookOpenIcon className="w-10 h-10 mb-2 text-gray-300" />
+              <p className="text-sm">{searchQuery ? 'No templates found' : 'No templates yet'}</p>
+            </div>
+          ) : (
+            filteredTemplates.map(template => (
+              <div
+                key={template._id}
+                onClick={() => handleSelectTemplate(template)}
+                className={`p-4 border-b border-gray-100 cursor-pointer transition-colors ${selectedTemplate?._id === template._id ? 'bg-green-50 border-l-4 border-l-whatsapp' : 'hover:bg-gray-50 border-l-4 border-l-transparent'}`}
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="font-medium text-gray-900">{template.name}</h3>
+                  <div className="flex space-x-1">
+                    <button
+                      onClick={e => handleDuplicate(template, e)}
+                      className="p-1 text-gray-400 hover:text-blue-600 cursor-pointer"
+                      title="Duplicate"
+                    >
+                      <CopyIcon className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setDeleteTarget(template) }}
+                      className="p-1 text-gray-400 hover:text-red-600 cursor-pointer"
+                      title="Delete"
+                    >
+                      <Trash2Icon className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 line-clamp-2 mb-2">{template.body}</p>
+                <div className="flex items-center text-xs text-gray-400">
+                  <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-600 mr-2">{template.variables?.length || 0} variables</span>
+                  <span>{new Date(template.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 line-clamp-2 mb-2">{template.body}</p>
-              <div className="flex items-center text-xs text-gray-400">
-                <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-600 mr-2">{template.variables.length} variables</span>
-                <span>{new Date(template.updatedAt).toLocaleDateString()}</span>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
@@ -83,36 +187,62 @@ export default function TemplatesPage() {
             <div className="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
               <h2 className="text-lg font-semibold text-gray-900">{selectedTemplate ? 'Edit Template' : 'Create New Template'}</h2>
               <div className="flex space-x-3">
-                <button onClick={() => setIsEditing(false)} className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">Cancel</button>
-                <button className="px-4 py-2 bg-whatsapp text-white rounded-lg text-sm font-medium hover:bg-whatsapp-hover transition-colors shadow-sm cursor-pointer">Save Template</button>
+                <button onClick={handleCancel} className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">
+                  Cancel
+                </button>
+                <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-whatsapp text-white rounded-lg text-sm font-medium hover:bg-whatsapp-hover transition-colors shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-2">
+                  {saving && <Loader2Icon className="w-4 h-4 animate-spin" />}
+                  Save Template
+                </button>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Template Name</label>
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Welcome Message" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp" />
+                  <input
+                    type="text"
+                    value={name}
+                    placeholder="e.g., Welcome Message"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp"
+                    onChange={e => {
+                      setName(e.target.value)
+                      setTemplates(prev => prev.map(t => t._id === selectedTemplate?._id ? { ...t, name: e.target.value } : t))
+                    }}
+                  />
                 </div>
                 <div>
                   <div className="flex justify-between items-end mb-1">
                     <label className="block text-sm font-medium text-gray-700">Message Body</label>
                     <span className="text-xs text-gray-500">{body.length} / 1024 chars</span>
                   </div>
-                  <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={8} placeholder="Type your message here..." className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp resize-none font-sans" />
+                  <textarea
+                    value={body}
+                    onChange={e => setBody(e.target.value)}
+                    rows={8}
+                    placeholder="Type your message here..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp resize-none font-sans"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Insert Variables</label>
                   <div className="flex flex-wrap gap-2">
-                    {['name', 'company', 'offer', 'link'].map((v) => (
-                      <button key={v} onClick={() => insertVariable(v)} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-md text-sm font-mono text-gray-700 transition-colors cursor-pointer">{`{{${v}}}`}</button>
+                    {['name', 'company', 'offer', 'link'].map(v => (
+                      <button key={v} onClick={() => insertVariable(v)} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-md text-sm font-mono text-gray-700 transition-colors cursor-pointer">
+                        {`{{${v}}}`}
+                      </button>
                     ))}
-                    <button className="px-3 py-1.5 border border-dashed border-gray-300 hover:border-gray-400 rounded-md text-sm text-gray-500 transition-colors flex items-center cursor-pointer"><PlusIcon className="w-3 h-3 mr-1" /> Custom</button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2 flex items-start"><AlertCircleIcon className="w-4 h-4 mr-1 flex-shrink-0" />Variables will be replaced with actual contact data when sending campaigns.</p>
+                  <p className="text-xs text-gray-500 mt-2 flex items-start">
+                    <AlertCircleIcon className="w-4 h-4 mr-1 flex-shrink-0" />
+                    Variables will be replaced with actual contact data when sending campaigns.
+                  </p>
                 </div>
               </div>
               <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 flex flex-col">
-                <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center"><MessageSquareIcon className="w-4 h-4 mr-2" /> Live Preview</h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center">
+                  <MessageSquareIcon className="w-4 h-4 mr-2" /> Live Preview
+                </h3>
                 <div className="flex-1 bg-[#efeae2] rounded-lg border border-gray-300 overflow-hidden relative flex flex-col p-4 shadow-inner">
                   <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'url("https://web.whatsapp.com/img/bg-chat-tile-dark_a4be512e7195b6b733d9110b408f075d.png")' }} />
                   <div className="bg-white rounded-lg p-3 shadow-sm max-w-[85%] relative z-10 self-start rounded-tl-none mt-2">
@@ -133,6 +263,36 @@ export default function TemplatesPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirm */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setDeleteTarget(null)}>
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Trash2Icon className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Delete Template</h3>
+                <p className="text-sm text-gray-500 mt-0.5">Are you sure you want to delete "{deleteTarget.name}"?</p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
+                Cancel
+              </button>
+              <button onClick={handleDeleteConfirm} className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium cursor-pointer">
+                Delete
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   )
 }
