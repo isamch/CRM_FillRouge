@@ -3,9 +3,12 @@ const { Client, LocalAuth } = pkg
 import WhatsappSession from '#models/whatsapp-session.model.js'
 import Contact from '#models/contact.model.js'
 
-const clients = new Map()
-const qrCodes = new Map()
-const statuses = new Map()
+const clients   = new Map()
+const qrCodes   = new Map()
+const statuses  = new Map()
+const chatsCache = new Map()  // userId → { chats: [], cachedAt: Date }
+
+const CACHE_TTL = 60 * 1000  // 60 seconds
 
 export const createClient = (userId) => {
   if (clients.has(userId)) return
@@ -25,6 +28,11 @@ export const createClient = (userId) => {
   client.on('ready', async () => {
     statuses.set(userId, 'connected')
     qrCodes.delete(userId)
+    // warm up cache on connect
+    try {
+      const chats = await client.getChats()
+      chatsCache.set(userId, { chats, cachedAt: Date.now() })
+    } catch {}
     await WhatsappSession.findOneAndUpdate(
       { userId },
       { status: 'connected', connectedAt: new Date() },
@@ -47,6 +55,7 @@ export const createClient = (userId) => {
     statuses.set(userId, 'disconnected')
     clients.delete(userId)
     qrCodes.delete(userId)
+    chatsCache.delete(userId)  // clear cache on disconnect
     await WhatsappSession.findOneAndUpdate(
       { userId },
       { status: 'disconnected', disconnectedAt: new Date() },
@@ -96,12 +105,28 @@ export const validatePhones = async (userId, listId) => {
   return { total: contacts.length, valid, invalid }
 }
 
+export const getChats = async (userId) => {
+  const client = clients.get(userId)
+  if (!client) return []
+
+  const cached = chatsCache.get(userId)
+  const isValid = cached && (Date.now() - cached.cachedAt) < CACHE_TTL
+
+  if (isValid) return cached.chats  // return from cache
+
+  // cache miss or expired → fetch fresh
+  const chats = await client.getChats()
+  chatsCache.set(userId, { chats, cachedAt: Date.now() })
+  return chats
+}
+
 export const destroyClient = async (userId) => {
   const client = clients.get(userId)
   if (client) {
     await client.destroy()
     clients.delete(userId)
     qrCodes.delete(userId)
+    chatsCache.delete(userId)
     statuses.set(userId, 'disconnected')
   }
 }

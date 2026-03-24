@@ -30,8 +30,8 @@ export const getConversations = asyncHandler(async (req, res) => {
 })
 
 export const getMessages = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 30 } = req.query
-  const result = await WhatsappService.getMessages(req.user._id, req.params.chatId, { page, limit })
+  const { limit = 50 } = req.query
+  const result = await WhatsappService.getMessages(req.user._id, req.params.chatId, { limit: +limit })
   successResponse(res, 200, 'Messages fetched', result)
 })
 
