@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { protect, checkIsActive } from '#middlewares/auth.middleware.js'
+import { authLimiter } from '#config/rate-limit.js'
 import authRoutes from './api/auth.routes.js'
 import userRoutes from './api/user.routes.js'
 import roleRoutes from './api/role.routes.js'
@@ -16,7 +17,7 @@ import dashboardRoutes from './api/dashboard.routes.js'
 
 const router = Router()
 
-router.use('/auth', authRoutes)
+router.use('/auth', authLimiter, authRoutes)
 
 router.use(protect, checkIsActive)
 
