@@ -2,12 +2,11 @@ import { Router } from 'express'
 import { validate } from '#middlewares/validate.middleware.js'
 import { createCampaignSchema } from '#validations/campaign.validation/createCampaign.validation.js'
 import { updateCampaignSchema } from '#validations/campaign.validation/updateCampaign.validation.js'
-import { scheduleCampaignSchema } from '#validations/campaign.validation/scheduleCampaign.validation.js'
 import {
   createCampaign, getCampaigns, getCampaignById,
   updateCampaign, deleteCampaign,
   runCampaignCtrl, pauseCampaignCtrl, resumeCampaignCtrl,
-  stopCampaignCtrl, scheduleCampaignCtrl, getCampaignLogs, resetCampaignCtrl,
+  stopCampaignCtrl, getCampaignLogs, resetCampaignCtrl,
 } from '#controllers/campaign.controller.js'
 
 const router = Router()
@@ -18,7 +17,6 @@ router.post('/:id/run', runCampaignCtrl)
 router.post('/:id/pause', pauseCampaignCtrl)
 router.post('/:id/resume', resumeCampaignCtrl)
 router.post('/:id/stop', stopCampaignCtrl)
-router.post('/:id/schedule', validate(scheduleCampaignSchema), scheduleCampaignCtrl)
 router.post('/:id/reset', resetCampaignCtrl)
 router.get('/:id/logs', getCampaignLogs)
 

@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
-  PlusIcon, PlayIcon, PauseIcon, SquareIcon, ClockIcon,
-  AlertTriangleIcon, FilterIcon, ChevronRightIcon, Loader2Icon, Trash2Icon, EditIcon, MoreVerticalIcon, RotateCcwIcon,
+  PlusIcon, PlayIcon, PauseIcon, SquareIcon,
+  ChevronRightIcon, Loader2Icon, Trash2Icon, EditIcon, MoreVerticalIcon, RotateCcwIcon, AlertTriangleIcon,
 } from 'lucide-react'
 import { Badge, SearchInput, PageHeader } from '@/components/ui'
 import WhatsAppRequired from '@/components/WhatsAppRequired'
@@ -14,10 +14,10 @@ import { getLists, getCategories } from '@/lib/contacts'
 import {
   getCampaigns, getCampaignById, createCampaign, updateCampaign, deleteCampaign,
   runCampaign, pauseCampaign, resumeCampaign, stopCampaign,
-  scheduleCampaign, getCampaignLogs, resetCampaign,
+  getCampaignLogs, resetCampaign,
 } from '@/lib/campaigns'
 
-const TABS = ['all', 'draft', 'running', 'paused', 'scheduled', 'completed', 'stopped']
+const TABS = ['all', 'draft', 'running', 'paused', 'completed', 'stopped']
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns]         = useState([])
@@ -159,7 +159,6 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
   const [acting, setActing]       = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
-  const [scheduleModal, setScheduleModal] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
   const pollRef = useRef(null)
@@ -205,7 +204,6 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
       if (action === 'pause')    await pauseCampaign(campaignId)
       if (action === 'resume')   await resumeCampaign(campaignId)
       if (action === 'stop')     await stopCampaign(campaignId)
-      if (action === 'schedule') await scheduleCampaign(campaignId, { scheduledAt: extra })
       if (action === 'reset')    await resetCampaign(campaignId)
       if (action === 'delete')   { await deleteCampaign(campaignId); showAlert('Campaign deleted', 'success'); onBack(); return }
       await fetchCampaign()
@@ -215,7 +213,6 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
     } finally {
       setActing(false)
       setDeleteConfirm(false)
-      setScheduleModal(false)
     }
   }
 
@@ -224,7 +221,6 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
 
   const progress = campaign.total > 0 ? (campaign.sent + campaign.failed) / campaign.total * 100 : 0
   const isDraft = campaign.status === 'draft'
-  const isScheduled = campaign.status === 'scheduled'
   const isRunning = campaign.status === 'running'
   const isPaused = campaign.status === 'paused'
   const isDone = ['completed', 'stopped'].includes(campaign.status)
@@ -305,7 +301,7 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
                 </button>
                 {menuOpen && (
                   <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
-                    {(isDraft || isScheduled) && (
+                    {isDraft && (
                       <>
                         <button onClick={() => { setIsEditing(true); setMenuOpen(false) }}
                           className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer">
@@ -314,10 +310,6 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
                         <button onClick={() => { handleAction('run'); setMenuOpen(false) }} disabled={!!acting}
                           className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer disabled:opacity-50">
                           {acting === 'run' ? <Loader2Icon className="w-4 h-4 text-gray-400 animate-spin" /> : <PlayIcon className="w-4 h-4 text-whatsapp" />} Run Now
-                        </button>
-                        <button onClick={() => { setScheduleModal(true); setMenuOpen(false) }}
-                          className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer">
-                          <ClockIcon className="w-4 h-4 text-blue-400" /> Schedule
                         </button>
                       </>
                     )}
@@ -339,7 +331,7 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
                         </button>
                       </>
                     )}
-                    {(isDraft || isScheduled || isDone) && (
+                    {(isDraft || isDone) && (
                       <>
                         <div className="border-t border-gray-100 my-1" />
                         {isDone && (
@@ -444,56 +436,8 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
         </div>
       )}
 
-      {/* Schedule Modal */}
-      {scheduleModal && (
-        <ScheduleModal
-          onClose={() => setScheduleModal(false)}
-          onConfirm={(date) => handleAction('schedule', date)}
-          acting={acting === 'schedule'}
-        />
-      )}
+      {/* Schedule Modal removed */}
     </motion.div>
-  )
-}
-
-function ScheduleModal({ onClose, onConfirm, acting }) {
-  const [date, setDate] = useState('')
-  const [time, setTime] = useState('')
-
-  const handleConfirm = () => {
-    if (!date || !time) return
-    onConfirm(new Date(`${date}T${time}`).toISOString())
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm" onClick={onClose}>
-      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <ClockIcon className="w-5 h-5 text-gray-400" /> Schedule Campaign
-        </h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-            <input type="time" value={time} onChange={e => setTime(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">Cancel</button>
-          <button onClick={handleConfirm} disabled={!date || !time || acting}
-            className="flex-1 py-2 bg-whatsapp text-white rounded-lg text-sm font-medium hover:bg-whatsapp-hover cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2">
-            {acting && <Loader2Icon className="w-4 h-4 animate-spin" />} Confirm
-          </button>
-        </div>
-      </motion.div>
-    </div>
   )
 }
 

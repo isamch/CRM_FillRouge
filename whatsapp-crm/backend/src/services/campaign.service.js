@@ -31,14 +31,6 @@ export const deleteCampaign = async (userId, id) => {
   return campaign
 }
 
-export const scheduleCampaign = async (userId, id, scheduledAt) => {
-  return Campaign.findOneAndUpdate(
-    { _id: id, userId, status: { $in: ['draft', 'scheduled'] } },
-    { status: 'scheduled', scheduledAt },
-    { new: true }
-  )
-}
-
 export const resetCampaign = async (userId, id) => {
   const campaign = await Campaign.findOne({ _id: id, userId, status: { $in: ['completed', 'stopped'] } })
   if (!campaign) return null

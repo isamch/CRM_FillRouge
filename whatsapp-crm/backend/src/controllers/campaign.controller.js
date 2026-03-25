@@ -1,6 +1,6 @@
 import asyncHandler from '#utils/async-handler.js'
 import { successResponse } from '#utils/api-response.js'
-import { notFound, badRequest } from '#utils/app-error.js'
+import { notFound } from '#utils/app-error.js'
 import * as campaignService from '#services/campaign.service.js'
 import { runCampaign, pauseCampaign, resumeCampaign, stopCampaign } from '#services/campaignEngine.js'
 
@@ -50,14 +50,6 @@ export const resumeCampaignCtrl = asyncHandler(async (req, res) => {
 export const stopCampaignCtrl = asyncHandler(async (req, res) => {
   await stopCampaign(req.params.id, req.user._id.toString())
   successResponse(res, 200, 'Campaign stopped', null)
-})
-
-export const scheduleCampaignCtrl = asyncHandler(async (req, res) => {
-  const { scheduledAt } = req.body
-  if (!scheduledAt) throw badRequest('scheduledAt is required')
-  const campaign = await campaignService.scheduleCampaign(req.user._id, req.params.id, new Date(scheduledAt))
-  if (!campaign) throw notFound('Campaign not found or cannot be scheduled')
-  successResponse(res, 200, 'Campaign scheduled', campaign)
 })
 
 export const resetCampaignCtrl = asyncHandler(async (req, res) => {
