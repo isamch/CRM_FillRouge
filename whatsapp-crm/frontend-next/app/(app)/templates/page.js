@@ -122,10 +122,10 @@ export default function TemplatesPage() {
 
   return (
     <WhatsAppRequired>
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex p-6 space-x-6 max-w-[1600px] mx-auto">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex p-6 gap-6 overflow-hidden">
 
       {/* Template List */}
-      <div className="w-1/3 min-w-[350px] flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="w-80 flex-shrink-0 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
           <h2 className="text-lg font-semibold text-gray-900">Message Templates</h2>
           <button onClick={handleNewTemplate} className="p-2 bg-whatsapp text-white rounded-lg hover:bg-whatsapp-hover transition-colors shadow-sm cursor-pointer">
@@ -183,7 +183,7 @@ export default function TemplatesPage() {
       </div>
 
       {/* Editor */}
-      <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {isEditing ? (
           <>
             <div className="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
@@ -198,7 +198,7 @@ export default function TemplatesPage() {
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar grid grid-cols-1 xl:grid-cols-2 gap-8">
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Template Name</label>
