@@ -7,7 +7,7 @@ import {
   createCampaign, getCampaigns, getCampaignById,
   updateCampaign, deleteCampaign,
   runCampaignCtrl, pauseCampaignCtrl, resumeCampaignCtrl,
-  stopCampaignCtrl, scheduleCampaignCtrl, getCampaignLogs,
+  stopCampaignCtrl, scheduleCampaignCtrl, getCampaignLogs, resetCampaignCtrl,
 } from '#controllers/campaign.controller.js'
 
 const router = Router()
@@ -19,6 +19,7 @@ router.post('/:id/pause', pauseCampaignCtrl)
 router.post('/:id/resume', resumeCampaignCtrl)
 router.post('/:id/stop', stopCampaignCtrl)
 router.post('/:id/schedule', validate(scheduleCampaignSchema), scheduleCampaignCtrl)
+router.post('/:id/reset', resetCampaignCtrl)
 router.get('/:id/logs', getCampaignLogs)
 
 export default router

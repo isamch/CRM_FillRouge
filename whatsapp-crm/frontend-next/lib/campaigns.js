@@ -15,5 +15,7 @@ export const resumeCampaign    = (id)          => api.post(`/campaigns/${id}/res
 export const stopCampaign      = (id)          => api.post(`/campaigns/${id}/stop`)
 export const scheduleCampaign  = (id, data)    => api.post(`/campaigns/${id}/schedule`, data)
 
+export const resetCampaign    = (id)          => api.post(`/campaigns/${id}/reset`)
+
 export const getCampaignLogs   = (id, page = 1, limit = 20) =>
   api.get(`/campaigns/${id}/logs?page=${page}&limit=${limit}`)

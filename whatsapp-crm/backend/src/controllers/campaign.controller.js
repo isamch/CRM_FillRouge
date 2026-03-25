@@ -60,6 +60,12 @@ export const scheduleCampaignCtrl = asyncHandler(async (req, res) => {
   successResponse(res, 200, 'Campaign scheduled', campaign)
 })
 
+export const resetCampaignCtrl = asyncHandler(async (req, res) => {
+  const campaign = await campaignService.resetCampaign(req.user._id, req.params.id)
+  if (!campaign) throw notFound('Campaign not found or cannot be reset')
+  successResponse(res, 200, 'Campaign reset', campaign)
+})
+
 export const getCampaignLogs = asyncHandler(async (req, res) => {
   const result = await campaignService.getCampaignLogs(req.params.id, req.user._id, req.query)
   if (!result) throw notFound('Campaign not found')

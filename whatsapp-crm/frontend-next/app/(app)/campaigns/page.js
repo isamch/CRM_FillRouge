@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
   PlusIcon, PlayIcon, PauseIcon, SquareIcon, ClockIcon,
-  AlertTriangleIcon, FilterIcon, ChevronRightIcon, Loader2Icon, Trash2Icon, EditIcon, MoreVerticalIcon,
+  AlertTriangleIcon, FilterIcon, ChevronRightIcon, Loader2Icon, Trash2Icon, EditIcon, MoreVerticalIcon, RotateCcwIcon,
 } from 'lucide-react'
 import { Badge, SearchInput, PageHeader } from '@/components/ui'
 import WhatsAppRequired from '@/components/WhatsAppRequired'
@@ -14,7 +14,7 @@ import { getLists, getCategories } from '@/lib/contacts'
 import {
   getCampaigns, getCampaignById, createCampaign, updateCampaign, deleteCampaign,
   runCampaign, pauseCampaign, resumeCampaign, stopCampaign,
-  scheduleCampaign, getCampaignLogs,
+  scheduleCampaign, getCampaignLogs, resetCampaign,
 } from '@/lib/campaigns'
 
 const TABS = ['all', 'draft', 'running', 'paused', 'scheduled', 'completed', 'stopped']
@@ -206,6 +206,7 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
       if (action === 'resume')   await resumeCampaign(campaignId)
       if (action === 'stop')     await stopCampaign(campaignId)
       if (action === 'schedule') await scheduleCampaign(campaignId, { scheduledAt: extra })
+      if (action === 'reset')    await resetCampaign(campaignId)
       if (action === 'delete')   { await deleteCampaign(campaignId); showAlert('Campaign deleted', 'success'); onBack(); return }
       await fetchCampaign()
       showAlert(`Campaign ${action}${action === 'pause' ? 'd' : 'ed'}`, 'success')
@@ -242,7 +243,7 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
       <div className="max-w-5xl w-full mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center mb-6">
           <button onClick={onBack} className="text-gray-500 hover:text-gray-900 flex items-center text-sm font-medium transition-colors cursor-pointer">
             <ChevronRightIcon className="w-4 h-4 mr-1 rotate-180" /> Back to Campaigns
           </button>
@@ -253,7 +254,9 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
           <div className="flex items-start justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-1">{campaign.name}</h1>
-              <Badge status={campaign.status} />
+              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                <Badge status={campaign.status} />
+              </div>
               <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-400">
                 <span>{campaign.templateId?.name}</span>
                 <span>•</span>
@@ -267,65 +270,93 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
               </div>
             </div>
 
-            {/* 3-dots menu */}
-            <div ref={menuRef} className="relative">
-              <button onClick={() => setMenuOpen(o => !o)}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
-                <MoreVerticalIcon className="w-5 h-5" />
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
-                  {(isDraft || isScheduled) && (
-                    <>
-                      <button onClick={() => { setIsEditing(true); setMenuOpen(false) }}
-                        className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer">
-                        <EditIcon className="w-4 h-4 text-gray-400" /> Edit
-                      </button>
-                      <button onClick={() => { handleAction('run'); setMenuOpen(false) }} disabled={!!acting}
-                        className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer disabled:opacity-50">
-                        {acting === 'run' ? <Loader2Icon className="w-4 h-4 text-gray-400 animate-spin" /> : <PlayIcon className="w-4 h-4 text-whatsapp" />} Run Now
-                      </button>
-                      <button onClick={() => { setScheduleModal(true); setMenuOpen(false) }}
-                        className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer">
-                        <ClockIcon className="w-4 h-4 text-blue-400" /> Schedule
-                      </button>
-                    </>
-                  )}
-                  {isRunning && (
-                    <>
-                      <button onClick={() => { handleAction('pause'); setMenuOpen(false) }} disabled={!!acting}
-                        className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer disabled:opacity-50">
-                        {acting === 'pause' ? <Loader2Icon className="w-4 h-4 animate-spin text-gray-400" /> : <PauseIcon className="w-4 h-4 text-amber-500" />} Pause
-                      </button>
-                      <button onClick={() => { handleAction('stop'); setMenuOpen(false) }} disabled={!!acting}
-                        className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer disabled:opacity-50">
-                        <SquareIcon className="w-4 h-4" /> Stop
-                      </button>
-                    </>
-                  )}
-                  {isPaused && (
-                    <>
-                      <button onClick={() => { handleAction('resume'); setMenuOpen(false) }} disabled={!!acting}
-                        className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer disabled:opacity-50">
-                        {acting === 'resume' ? <Loader2Icon className="w-4 h-4 animate-spin text-gray-400" /> : <PlayIcon className="w-4 h-4 text-whatsapp" />} Resume
-                      </button>
-                      <button onClick={() => { handleAction('stop'); setMenuOpen(false) }} disabled={!!acting}
-                        className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer disabled:opacity-50">
-                        <SquareIcon className="w-4 h-4" /> Stop
-                      </button>
-                    </>
-                  )}
-                  {(isDraft || isScheduled || isDone) && (
-                    <>
-                      <div className="border-t border-gray-100 my-1" />
-                      <button onClick={() => { setDeleteConfirm(true); setMenuOpen(false) }}
-                        className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer">
-                        <Trash2Icon className="w-4 h-4" /> Delete
-                      </button>
-                    </>
-                  )}
-                </div>
+            {/* Actions + 3-dots */}
+            <div className="flex items-center gap-2">
+              {isRunning && (
+                <>
+                  <button onClick={() => handleAction('pause')} disabled={!!acting}
+                    className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg font-medium flex items-center hover:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50">
+                    {acting === 'pause' ? <Loader2Icon className="w-4 h-4 mr-2 animate-spin" /> : <PauseIcon className="w-4 h-4 mr-2" />} Pause
+                  </button>
+                  <button onClick={() => handleAction('stop')} disabled={!!acting}
+                    className="px-4 py-2 bg-red-100 text-red-800 rounded-lg font-medium flex items-center hover:bg-red-200 transition-colors cursor-pointer disabled:opacity-50">
+                    <SquareIcon className="w-4 h-4 mr-2" /> Stop
+                  </button>
+                </>
               )}
+              {isPaused && (
+                <>
+                  <button onClick={() => handleAction('resume')} disabled={!!acting}
+                    className="px-4 py-2 bg-whatsapp text-white rounded-lg font-medium flex items-center hover:bg-whatsapp-hover transition-colors cursor-pointer disabled:opacity-50">
+                    {acting === 'resume' ? <Loader2Icon className="w-4 h-4 mr-2 animate-spin" /> : <PlayIcon className="w-4 h-4 mr-2" />} Resume
+                  </button>
+                  <button onClick={() => handleAction('stop')} disabled={!!acting}
+                    className="px-4 py-2 bg-red-100 text-red-800 rounded-lg font-medium flex items-center hover:bg-red-200 transition-colors cursor-pointer disabled:opacity-50">
+                    <SquareIcon className="w-4 h-4 mr-2" /> Stop
+                  </button>
+                </>
+              )}
+
+              {/* 3-dots menu */}
+              <div ref={menuRef} className="relative">
+                <button onClick={() => setMenuOpen(o => !o)}
+                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+                  <MoreVerticalIcon className="w-5 h-5" />
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
+                    {(isDraft || isScheduled) && (
+                      <>
+                        <button onClick={() => { setIsEditing(true); setMenuOpen(false) }}
+                          className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer">
+                          <EditIcon className="w-4 h-4 text-gray-400" /> Edit
+                        </button>
+                        <button onClick={() => { handleAction('run'); setMenuOpen(false) }} disabled={!!acting}
+                          className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer disabled:opacity-50">
+                          {acting === 'run' ? <Loader2Icon className="w-4 h-4 text-gray-400 animate-spin" /> : <PlayIcon className="w-4 h-4 text-whatsapp" />} Run Now
+                        </button>
+                        <button onClick={() => { setScheduleModal(true); setMenuOpen(false) }}
+                          className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer">
+                          <ClockIcon className="w-4 h-4 text-blue-400" /> Schedule
+                        </button>
+                      </>
+                    )}
+                    {isRunning && (
+                      <>
+                        <div className="border-t border-gray-100 my-1" />
+                        <button onClick={() => { handleAction('stop'); setMenuOpen(false) }} disabled={!!acting}
+                          className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer disabled:opacity-50">
+                          <SquareIcon className="w-4 h-4" /> Stop
+                        </button>
+                      </>
+                    )}
+                    {isPaused && (
+                      <>
+                        <div className="border-t border-gray-100 my-1" />
+                        <button onClick={() => { handleAction('stop'); setMenuOpen(false) }} disabled={!!acting}
+                          className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer disabled:opacity-50">
+                          <SquareIcon className="w-4 h-4" /> Stop
+                        </button>
+                      </>
+                    )}
+                    {(isDraft || isScheduled || isDone) && (
+                      <>
+                        <div className="border-t border-gray-100 my-1" />
+                        {isDone && (
+                          <button onClick={() => { handleAction('reset'); setMenuOpen(false) }} disabled={!!acting}
+                            className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer disabled:opacity-50">
+                            <RotateCcwIcon className="w-4 h-4 text-blue-400" /> Reset
+                          </button>
+                        )}
+                        <button onClick={() => { setDeleteConfirm(true); setMenuOpen(false) }}
+                          className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer">
+                          <Trash2Icon className="w-4 h-4" /> Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
