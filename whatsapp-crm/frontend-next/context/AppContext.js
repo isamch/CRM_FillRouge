@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { getUser, saveUser, saveTokens, clearTokens, isAuthenticated } from '@/lib/auth'
 import api from '@/lib/api'
+import { getUnreadCount } from '@/lib/notifications'
 
 const AppContext = createContext(null)
 
@@ -11,7 +12,9 @@ export function AppProvider({ children }) {
   const [sessionStatus, setSessionStatus] = useState('disconnected')
   const [authLoading, setAuthLoading]     = useState(true)
   const [unreadConversations, setUnreadConversations] = useState(0)
-  const pollRef = useRef(null)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
+  const pollRef     = useRef(null)
+  const notifPollRef = useRef(null)
 
   useEffect(() => {
     const stored = getUser()
@@ -32,6 +35,21 @@ export function AppProvider({ children }) {
     fetchStatus()
     pollRef.current = setInterval(fetchStatus, 10000)
     return () => clearInterval(pollRef.current)
+  }, [user])
+
+  // poll unread notifications every 15s
+  useEffect(() => {
+    if (!user) { clearInterval(notifPollRef.current); return }
+
+    const fetchUnread = () => {
+      getUnreadCount()
+        .then(res => setUnreadNotifications(res.data?.count || 0))
+        .catch(() => {})
+    }
+
+    fetchUnread()
+    notifPollRef.current = setInterval(fetchUnread, 15000)
+    return () => clearInterval(notifPollRef.current)
   }, [user])
 
   const login = async ({ email, password }) => {
@@ -60,6 +78,7 @@ export function AppProvider({ children }) {
       isAuthenticated: !!user,
       sessionStatus, setSessionStatus,
       unreadConversations, setUnreadConversations,
+      unreadNotifications, setUnreadNotifications,
     }}>
       {children}
     </AppContext.Provider>

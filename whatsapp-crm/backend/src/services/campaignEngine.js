@@ -3,6 +3,7 @@ import CampaignLog from '#models/campaign-log.model.js'
 import Contact from '#models/contact.model.js'
 import Template from '#models/template.model.js'
 import User from '#models/user.model.js'
+import Notification from '#models/notification.model.js'
 import { getClient, getStatus } from './whatsapp/sessionManager.js'
 
 // Active campaign runners: campaignId → { timer, paused, stopped }
@@ -75,6 +76,13 @@ export const runCampaign = async (campaignId, userId) => {
     const finalState = runners.get(campaignId.toString())
     if (finalState && !finalState.stopped) {
       await Campaign.findByIdAndUpdate(campaignId, { status: 'completed', completedAt: new Date() })
+      await Notification.create({
+        senderId:    userId,
+        recipientId: userId,
+        subject:     `Campaign "${campaign.name}" completed`,
+        body:        `Your campaign has finished. Sent: ${campaign.sent || 0}, Failed: ${campaign.failed || 0}, Total: ${campaign.total || 0}.`,
+        isBroadcast: false,
+      })
     }
     runners.delete(campaignId.toString())
   })()
