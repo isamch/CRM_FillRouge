@@ -55,10 +55,11 @@ export const runCampaign = async (campaignId, userId) => {
       if (state.stopped) break
 
       const message = substituteVariables(template.body, contact)
+      const phoneId = contact.phone.replace(/[^0-9]/g, '') + '@c.us'
       let logStatus = 'sent', logError = null
 
       try {
-        await client.sendMessage(contact.phone + '@c.us', message)
+        await client.sendMessage(phoneId, message)
         await Campaign.findByIdAndUpdate(campaignId, { $inc: { sent: 1 } })
         await User.findByIdAndUpdate(userId, { $inc: { messageCount: 1 } })
       } catch (err) {

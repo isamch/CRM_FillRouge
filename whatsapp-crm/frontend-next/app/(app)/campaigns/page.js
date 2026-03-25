@@ -209,7 +209,7 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
       if (action === 'reset')    await resetCampaign(campaignId)
       if (action === 'delete')   { await deleteCampaign(campaignId); showAlert('Campaign deleted', 'success'); onBack(); return }
       await fetchCampaign()
-      showAlert(`Campaign ${action}${action === 'pause' ? 'd' : 'ed'}`, 'success')
+      if (action !== 'run') showAlert(`Campaign ${action}${action === 'pause' ? 'd' : 'ed'}`, 'success')
     } catch (err) {
       showAlert(err.message || `Failed to ${action}`, 'error')
     } finally {
