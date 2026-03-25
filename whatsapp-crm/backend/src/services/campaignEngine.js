@@ -73,7 +73,7 @@ export const runCampaign = async (campaignId, userId) => {
     }
 
     const finalState = runners.get(campaignId.toString())
-    if (!finalState?.stopped) {
+    if (finalState && !finalState.stopped) {
       await Campaign.findByIdAndUpdate(campaignId, { status: 'completed', completedAt: new Date() })
     }
     runners.delete(campaignId.toString())
@@ -107,5 +107,4 @@ export const stopCampaign = async (campaignId, userId) => {
   const state = runners.get(campaignId.toString())
   if (state) { state.stopped = true; state.paused = false }
   await Campaign.findByIdAndUpdate(campaignId, { status: 'stopped' })
-  runners.delete(campaignId.toString())
 }

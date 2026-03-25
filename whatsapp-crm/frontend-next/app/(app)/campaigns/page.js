@@ -112,7 +112,8 @@ export default function CampaignsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filtered.map(campaign => {
-                    const progress = campaign.total > 0 ? (campaign.sent + campaign.failed) / campaign.total * 100 : 0
+                    const progress = campaign.total > 0 ? campaign.sent / campaign.total * 100 : 0
+                    const failedPct = campaign.total > 0 ? campaign.failed / campaign.total * 100 : 0
                     return (
                       <tr key={campaign._id} className="hover:bg-gray-50 transition-colors group cursor-pointer" onClick={() => setSelectedCampaign(campaign._id)}>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -123,15 +124,20 @@ export default function CampaignsPage() {
                         <td className="px-6 py-4 whitespace-nowrap w-48">
                           <div className="flex items-center gap-2">
                             <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                              <div className={`h-2 rounded-full transition-all duration-500 ${
-                                campaign.status === 'running'   ? 'bg-emerald-500' :
-                                campaign.status === 'completed' ? 'bg-blue-500' :
-                                campaign.status === 'paused'    ? 'bg-amber-400' :
-                                campaign.status === 'stopped'   ? 'bg-red-400' :
-                                'bg-gray-300'
-                              }`} style={{ width: `${progress}%` }} />
+                              <div className="flex h-full">
+                                <div className={`h-full transition-all duration-500 ${
+                                  campaign.status === 'running'   ? 'bg-emerald-500' :
+                                  campaign.status === 'completed' ? 'bg-blue-500' :
+                                  campaign.status === 'paused'    ? 'bg-amber-400' :
+                                  campaign.status === 'stopped'   ? 'bg-red-400' :
+                                  'bg-gray-300'
+                                }`} style={{ width: `${progress}%` }} />
+                                {failedPct > 0 && (
+                                  <div className="h-full bg-red-300 transition-all duration-500" style={{ width: `${failedPct}%` }} />
+                                )}
+                              </div>
                             </div>
-                            <span className="text-xs font-medium text-gray-500 w-8 text-right">{Math.round(progress)}%</span>
+                            <span className="text-xs font-medium text-gray-500 w-8 text-right">{Math.round(progress + failedPct)}%</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -210,8 +216,14 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
       if (action === 'pause')    await pauseCampaign(campaignId)
       if (action === 'resume')   await resumeCampaign(campaignId)
       if (action === 'stop')     await stopCampaign(campaignId)
-      if (action === 'reset')    await resetCampaign(campaignId)
       if (action === 'delete')   { await deleteCampaign(campaignId); showAlert('Campaign deleted', 'success'); onBack(); return }
+      if (action === 'reset') {
+        const res = await resetCampaign(campaignId)
+        setCampaign(res.data)
+        setLogs([])
+        showAlert('Campaign reset', 'success')
+        return
+      }
       await fetchCampaign()
       if (action !== 'run') showAlert(`Campaign ${action}${action === 'pause' ? 'd' : 'ed'}`, 'success')
     } catch (err) {
@@ -225,7 +237,16 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
   if (loading) return <div className="flex items-center justify-center h-full text-gray-400"><Loader2Icon className="w-6 h-6 animate-spin" /></div>
   if (!campaign) return null
 
-  const progress = campaign.total > 0 ? (campaign.sent + campaign.failed) / campaign.total * 100 : 0
+  const sentPct   = campaign.total > 0 ? campaign.sent   / campaign.total * 100 : 0
+  const failedPct  = campaign.total > 0 ? campaign.failed / campaign.total * 100 : 0
+  const progress   = sentPct + failedPct
+
+  const barColor =
+    campaign.status === 'running'   ? 'bg-emerald-500' :
+    campaign.status === 'completed' ? 'bg-blue-500' :
+    campaign.status === 'paused'    ? 'bg-amber-400' :
+    campaign.status === 'stopped'   ? 'bg-red-400' :
+    'bg-gray-300'
   const isDraft = campaign.status === 'draft'
   const isRunning = campaign.status === 'running'
   const isPaused = campaign.status === 'paused'
@@ -366,8 +387,8 @@ function CampaignDetail({ campaignId, onBack, showAlert }) {
             </div>
             <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden mb-4">
               <div className="flex h-full">
-                <div className="bg-whatsapp h-full transition-all duration-500" style={{ width: `${campaign.total > 0 ? campaign.sent / campaign.total * 100 : 0}%` }} />
-                <div className="bg-red-400 h-full transition-all duration-500" style={{ width: `${campaign.total > 0 ? campaign.failed / campaign.total * 100 : 0}%` }} />
+                <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${sentPct}%` }} />
+                {failedPct > 0 && <div className="h-full bg-red-300 transition-all duration-500" style={{ width: `${failedPct}%` }} />}
               </div>
             </div>
             <div className="grid grid-cols-4 gap-3">

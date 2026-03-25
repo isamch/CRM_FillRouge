@@ -35,7 +35,7 @@ export const resetCampaign = async (userId, id) => {
   const campaign = await Campaign.findOne({ _id: id, userId, status: { $in: ['completed', 'stopped'] } })
   if (!campaign) return null
   await CampaignLog.deleteMany({ campaignId: id })
-  return Campaign.findByIdAndUpdate(id, { status: 'draft', sent: 0, failed: 0, total: 0, startedAt: null, completedAt: null, scheduledAt: null }, { new: true })
+  return Campaign.findByIdAndUpdate(id, { status: 'draft', sent: 0, failed: 0, total: 0, startedAt: null, completedAt: null }, { new: true }).populate('templateId', 'name body').populate('listId', 'name contactCount')
 }
 
 export const getCampaignLogs = async (campaignId, userId, { page, limit }) => {

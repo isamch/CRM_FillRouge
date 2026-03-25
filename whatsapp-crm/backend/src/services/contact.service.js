@@ -60,15 +60,19 @@ export const importFromCSV = async (userId, listId, csvText) => {
 
   const rows = lines.slice(1).map(line => {
     const cols = line.split(',')
-    return { name: cols[nameIdx]?.trim(), phone: cols[phoneIdx]?.trim() }
-  }).filter(r => r.name && r.phone)
+    return {
+      name:  cols[nameIdx]?.trim()  || '',
+      phone: cols[phoneIdx]?.trim() || '',
+      notes: cols[headers.indexOf('notes')]?.trim() || '',
+    }
+  }).filter(r => r.phone)
 
   const existingPhones = await Contact.find({ listId, phone: { $in: rows.map(r => r.phone) } }).distinct('phone')
   const newRows = rows.filter(r => !existingPhones.includes(r.phone))
 
   if (newRows.length === 0) return { imported: 0, skipped: rows.length }
 
-  await Contact.insertMany(newRows.map(r => ({ userId, listId, name: r.name, phone: r.phone })))
+  await Contact.insertMany(newRows.map(r => ({ userId, listId, name: r.name, phone: r.phone, notes: r.notes })))
   await ContactList.findByIdAndUpdate(listId, { $inc: { contactCount: newRows.length } })
 
   return { imported: newRows.length, skipped: rows.length - newRows.length }
