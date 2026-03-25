@@ -26,10 +26,8 @@ const adminItems = [
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, sessionStatus, logout, unreadConversations } = useApp()
+  const { user, sessionStatus, unreadConversations, unreadNotifications } = useApp()
   const currentUser = user || { name: '', email: '', roles: [] }
-
-  const unreadNotifications = 0
 
   const isActive = (href) => {
     if (href === '/dashboard') return pathname === '/dashboard'

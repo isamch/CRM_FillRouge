@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { BellIcon, Trash2Icon, CheckIcon, Loader2Icon } from 'lucide-react'
+import { BellIcon, Trash2Icon, CheckIcon, Loader2Icon, SettingsIcon, UserIcon, UsersIcon } from 'lucide-react'
 import { PageHeader, EmptyState } from '@/components/ui'
 import { useAlert } from '@/context/AlertContext'
 import { useApp } from '@/context/AppContext'
@@ -94,8 +94,13 @@ export default function NotificationsPage() {
                             {new Date(notif.createdAt).toLocaleString()}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-400 mb-1">
-                          {notif.isBroadcast ? 'Broadcast' : `From: ${notif.senderId?.name || 'System'}`}
+                        <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                          {notif.isSystem
+                            ? <SettingsIcon className="w-3 h-3 text-gray-400" />
+                            : notif.isBroadcast
+                            ? <UsersIcon className="w-3 h-3 text-gray-400" />
+                            : <UserIcon className="w-3 h-3 text-gray-400" />}
+                          <span>{notif.isSystem ? 'System' : notif.isBroadcast ? 'Broadcast' : `From: ${notif.senderId?.name || 'Admin'}`}</span>
                         </p>
                         {expandedId === notif._id ? (
                           <div className="mt-3 text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg border border-gray-100">

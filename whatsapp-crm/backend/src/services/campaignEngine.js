@@ -77,11 +77,12 @@ export const runCampaign = async (campaignId, userId) => {
     if (finalState && !finalState.stopped) {
       await Campaign.findByIdAndUpdate(campaignId, { status: 'completed', completedAt: new Date() })
       await Notification.create({
-        senderId:    userId,
+        senderId:    null,
         recipientId: userId,
         subject:     `Campaign "${campaign.name}" completed`,
         body:        `Your campaign has finished. Sent: ${campaign.sent || 0}, Failed: ${campaign.failed || 0}, Total: ${campaign.total || 0}.`,
         isBroadcast: false,
+        isSystem:    true,
       })
     }
     runners.delete(campaignId.toString())
