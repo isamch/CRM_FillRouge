@@ -121,11 +121,17 @@ export default function CampaignsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap"><Badge status={campaign.status} /></td>
                         <td className="px-6 py-4 whitespace-nowrap w-48">
-                          <div className="flex items-center">
-                            <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
-                              <div className={`h-2 rounded-full ${campaign.status === 'running' ? 'bg-whatsapp' : 'bg-gray-400'}`} style={{ width: `${progress}%` }} />
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                              <div className={`h-2 rounded-full transition-all duration-500 ${
+                                campaign.status === 'running'   ? 'bg-emerald-500' :
+                                campaign.status === 'completed' ? 'bg-blue-500' :
+                                campaign.status === 'paused'    ? 'bg-amber-400' :
+                                campaign.status === 'stopped'   ? 'bg-red-400' :
+                                'bg-gray-300'
+                              }`} style={{ width: `${progress}%` }} />
                             </div>
-                            <span className="text-xs font-medium text-gray-600 w-8">{Math.round(progress)}%</span>
+                            <span className="text-xs font-medium text-gray-500 w-8 text-right">{Math.round(progress)}%</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
