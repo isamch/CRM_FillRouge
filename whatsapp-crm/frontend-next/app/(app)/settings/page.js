@@ -24,6 +24,7 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword]           = useState('')
   const [confirmPassword, setConfirmPassword]   = useState('')
   const [savingPassword, setSavingPassword]     = useState(false)
+  const [passwordErrors, setPasswordErrors]     = useState({})
 
   const [waProfile, setWaProfile]         = useState(null)
   const [disconnecting, setDisconnecting] = useState(false)
@@ -66,9 +67,14 @@ export default function SettingsPage() {
   }
 
   const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) return
-    if (newPassword !== confirmPassword) { showAlert('Passwords do not match', 'error'); return }
-    if (newPassword.length < 6) { showAlert('Password must be at least 6 characters', 'error'); return }
+    const errs = {}
+    if (!currentPassword) errs.currentPassword = 'Current password is required'
+    if (!newPassword) errs.newPassword = 'New password is required'
+    else if (newPassword.length < 6) errs.newPassword = 'Password must be at least 6 characters'
+    if (!confirmPassword) errs.confirmPassword = 'Please confirm your password'
+    else if (newPassword !== confirmPassword) errs.confirmPassword = 'Passwords do not match'
+    if (Object.keys(errs).length) { setPasswordErrors(errs); return }
+    setPasswordErrors({})
     setSavingPassword(true)
     try {
       await changePassword(currentPassword, newPassword)
@@ -180,14 +186,20 @@ export default function SettingsPage() {
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField label="Current Password">
-                <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
+                <input type="password" value={currentPassword} onChange={(e) => { setCurrentPassword(e.target.value); setPasswordErrors(p => ({ ...p, currentPassword: '' })) }} placeholder="••••••••"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none ${passwordErrors.currentPassword ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                {passwordErrors.currentPassword && <p className="text-xs text-red-500 mt-1">{passwordErrors.currentPassword}</p>}
               </FormField>
               <div className="hidden md:block"></div>
               <FormField label="New Password">
-                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
+                <input type="password" value={newPassword} onChange={(e) => { setNewPassword(e.target.value); setPasswordErrors(p => ({ ...p, newPassword: '' })) }} placeholder="••••••••"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none ${passwordErrors.newPassword ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                {passwordErrors.newPassword && <p className="text-xs text-red-500 mt-1">{passwordErrors.newPassword}</p>}
               </FormField>
               <FormField label="Confirm New Password">
-                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
+                <input type="password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setPasswordErrors(p => ({ ...p, confirmPassword: '' })) }} placeholder="••••••••"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none ${passwordErrors.confirmPassword ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                {passwordErrors.confirmPassword && <p className="text-xs text-red-500 mt-1">{passwordErrors.confirmPassword}</p>}
               </FormField>
             </div>
             <div className="flex justify-end pt-2">

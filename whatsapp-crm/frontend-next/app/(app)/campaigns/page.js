@@ -479,6 +479,7 @@ function CampaignEdit({ campaign, onCancel, onSaved, showAlert }) {
   const [rate, setRate]             = useState(campaign.ratePerMinute)
   const [saving, setSaving]         = useState(false)
   const [loadingData, setLoadingData] = useState(true)
+  const [errors, setErrors]         = useState({})
 
   useEffect(() => {
     Promise.all([getTemplates(), getLists(), getCategories()])
@@ -492,9 +493,9 @@ function CampaignEdit({ campaign, onCancel, onSaved, showAlert }) {
   }, [])
 
   const handleSave = async () => {
-    const errors = validateCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
-    
-    if (Object.keys(errors).length) { showAlert(Object.values(errors)[0], 'error'); return }
+    const errs = validateCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
+    if (Object.keys(errs).length) { setErrors(errs); return }
+    setErrors({})
 
     setSaving(true)
     try {
@@ -522,21 +523,24 @@ function CampaignEdit({ campaign, onCancel, onSaved, showAlert }) {
             <div className="p-6 space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none" />
+                <input type="text" value={name} onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })) }}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
               </div>
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Template</label>
-                  <select value={templateId} onChange={e => setTemplateId(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none bg-white">
+                  <select value={templateId} onChange={e => { setTemplateId(e.target.value); setErrors(p => ({ ...p, templateId: '' })) }}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none bg-white ${errors.templateId ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}>
                     <option value="">Choose a template...</option>
                     {templates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
                   </select>
+                  {errors.templateId && <p className="text-xs text-red-500 mt-1">{errors.templateId}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Contact List</label>
-                  <ListSelect lists={lists} categories={categories} value={listId} onChange={setListId} />
+                  <ListSelect lists={lists} categories={categories} value={listId} onChange={v => { setListId(v); setErrors(p => ({ ...p, listId: '' })) }} />
+                  {errors.listId && <p className="text-xs text-red-500 mt-1">{errors.listId}</p>}
                 </div>
               </div>
               <div>
@@ -640,6 +644,7 @@ function CampaignCreate({ onCancel, onCreated, showAlert }) {
   const [rate, setRate]             = useState(15)
   const [saving, setSaving]         = useState(false)
   const [loadingData, setLoadingData] = useState(true)
+  const [errors, setErrors]         = useState({})
 
   useEffect(() => {
     Promise.all([getTemplates(), getLists(), getCategories()])
@@ -653,8 +658,9 @@ function CampaignCreate({ onCancel, onCreated, showAlert }) {
   }, [])
 
   const handleSubmit = async () => {
-    const errors = validateCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
-    if (Object.keys(errors).length) { showAlert(Object.values(errors)[0], 'error'); return }
+    const errs = validateCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
+    if (Object.keys(errs).length) { setErrors(errs); return }
+    setErrors({})
     setSaving(true)
     try {
       await createCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
@@ -685,29 +691,27 @@ function CampaignCreate({ onCancel, onCreated, showAlert }) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
                 <input
-                  type="text" value={name} onChange={e => setName(e.target.value)}
+                  type="text" value={name} onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })) }}
                   placeholder="e.g., Spring Promo 2026"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                 />
+                {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Select Template</label>
-                  <select value={templateId} onChange={e => setTemplateId(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none bg-white">
+                  <select value={templateId} onChange={e => { setTemplateId(e.target.value); setErrors(p => ({ ...p, templateId: '' })) }}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp outline-none bg-white ${errors.templateId ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}>
                     <option value="">Choose a template...</option>
                     {templates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
                   </select>
+                  {errors.templateId && <p className="text-xs text-red-500 mt-1">{errors.templateId}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Select Contact List</label>
-                  <ListSelect
-                    lists={lists}
-                    categories={categories}
-                    value={listId}
-                    onChange={setListId}
-                  />
+                  <ListSelect lists={lists} categories={categories} value={listId} onChange={v => { setListId(v); setErrors(p => ({ ...p, listId: '' })) }} />
+                  {errors.listId && <p className="text-xs text-red-500 mt-1">{errors.listId}</p>}
                 </div>
               </div>
 

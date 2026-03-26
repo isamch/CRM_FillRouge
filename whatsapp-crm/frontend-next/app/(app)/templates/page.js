@@ -19,6 +19,7 @@ export default function TemplatesPage() {
   const [searchQuery, setSearchQuery]       = useState('')
   const [name, setName]                     = useState('')
   const [body, setBody]                     = useState('')
+  const [errors, setErrors]                 = useState({})
   const { showAlert } = useAlert()
 
   useEffect(() => {
@@ -57,12 +58,13 @@ export default function TemplatesPage() {
     setSelectedTemplate(null)
     setName('')
     setBody('')
+    setErrors({})
   }
 
   const handleSave = async () => {
-    const errors = validateTemplate({ name: name.trim(), body: body.trim() })
-    if (errors.name) { showAlert(errors.name, 'error'); return }
-    if (errors.body) { showAlert(errors.body, 'error'); return }
+    const errs = validateTemplate({ name: name.trim(), body: body.trim() })
+    if (Object.keys(errs).length) { setErrors(errs); return }
+    setErrors({})
     setSaving(true)
     try {
       const finalName = name.trim()
@@ -210,12 +212,14 @@ export default function TemplatesPage() {
                     type="text"
                     value={name}
                     placeholder="e.g., Welcome Message"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                     onChange={e => {
                       setName(e.target.value)
+                      setErrors(p => ({ ...p, name: '' }))
                       setTemplates(prev => prev.map(t => t._id === selectedTemplate?._id ? { ...t, name: e.target.value } : t))
                     }}
                   />
+                  {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
                 </div>
                 <div>
                   <div className="flex justify-between items-end mb-1">
@@ -224,11 +228,12 @@ export default function TemplatesPage() {
                   </div>
                   <textarea
                     value={body}
-                    onChange={e => setBody(e.target.value)}
+                    onChange={e => { setBody(e.target.value); setErrors(p => ({ ...p, body: '' })) }}
                     rows={8}
                     placeholder="Type your message here..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp resize-none font-sans"
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp/50 focus:border-whatsapp resize-none font-sans ${errors.body ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                   />
+                  {errors.body && <p className="text-xs text-red-500 mt-1">{errors.body}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Insert Variables</label>

@@ -17,6 +17,7 @@ export default function AdminNotificationsPage() {
   const [body, setBody]           = useState('')
   const [sending, setSending]     = useState(false)
   const [loading, setLoading]     = useState(true)
+  const [errors, setErrors]       = useState({})
   const { showAlert } = useAlert()
 
   useEffect(() => {
@@ -31,8 +32,9 @@ export default function AdminNotificationsPage() {
   }, [])
 
   const handleSend = async () => {
-    const errors = validateNotification({ subject: subject.trim(), body: body.trim(), recipientId: recipient !== 'all' ? recipient : undefined })
-    if (Object.keys(errors).length) { showAlert(Object.values(errors)[0], 'error'); return }
+    const errs = validateNotification({ subject: subject.trim(), body: body.trim(), recipientId: recipient !== 'all' ? recipient : undefined })
+    if (Object.keys(errs).length) { setErrors(errs); return }
+    setErrors({})
     setSending(true)
     try {
       const payload = {
@@ -85,15 +87,17 @@ export default function AdminNotificationsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
+                <input type="text" value={subject} onChange={e => { setSubject(e.target.value); setErrors(p => ({ ...p, subject: '' })) }}
                   placeholder="e.g., Scheduled Maintenance Notice"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none" />
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none ${errors.subject ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                {errors.subject && <p className="text-xs text-red-500 mt-1">{errors.subject}</p>}
               </div>
               <div className="flex-1 flex flex-col">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Message Body</label>
-                <textarea value={body} onChange={e => setBody(e.target.value)}
+                <textarea value={body} onChange={e => { setBody(e.target.value); setErrors(p => ({ ...p, body: '' })) }}
                   placeholder="Type your notification message here..."
-                  className="w-full flex-1 min-h-[150px] px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none resize-none" />
+                  className={`w-full flex-1 min-h-[150px] px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none resize-none ${errors.body ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                {errors.body && <p className="text-xs text-red-500 mt-1">{errors.body}</p>}
               </div>
               <button disabled={!subject || !body || sending} onClick={handleSend}
                 className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center disabled:opacity-50 cursor-pointer">
