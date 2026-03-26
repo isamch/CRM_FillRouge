@@ -6,7 +6,8 @@ import { PlusIcon, SearchIcon, CopyIcon, EditIcon, Trash2Icon, MessageSquareIcon
 import { SearchInput } from '@/components/ui'
 import { useAlert } from '@/context/AlertContext'
 import { getTemplates, createTemplate, updateTemplate, deleteTemplate } from '@/lib/templates'
-import { validateTemplate } from '@/lib/validations/template/templateValidation'
+import { validateCreateTemplate } from '@/lib/validations/template/createTemplate.validation'
+import { validateUpdateTemplate } from '@/lib/validations/template/updateTemplate.validation'
 import WhatsAppRequired from '@/components/WhatsAppRequired'
 
 export default function TemplatesPage() {
@@ -62,7 +63,9 @@ export default function TemplatesPage() {
   }
 
   const handleSave = async () => {
-    const errs = validateTemplate({ name: name.trim(), body: body.trim() })
+    const errs = selectedTemplate && selectedTemplate._id !== DRAFT_ID
+      ? validateUpdateTemplate({ name: name.trim(), body: body.trim() })
+      : validateCreateTemplate({ name: name.trim(), body: body.trim() })
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
     setSaving(true)

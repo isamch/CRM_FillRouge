@@ -7,7 +7,7 @@ import { useAlert } from '@/context/AlertContext'
 import api from '@/lib/api'
 import { getInbox } from '@/lib/notifications'
 import { getUsers } from '@/lib/users'
-import { validateNotification } from '@/lib/validations/notification/notificationValidation'
+import { validateSendNotification } from '@/lib/validations/notification/sendNotification.validation'
 
 export default function AdminNotificationsPage() {
   const [users, setUsers]         = useState([])
@@ -32,7 +32,7 @@ export default function AdminNotificationsPage() {
   }, [])
 
   const handleSend = async () => {
-    const errs = validateNotification({ subject: subject.trim(), body: body.trim(), recipientId: recipient !== 'all' ? recipient : undefined })
+    const errs = validateSendNotification({ subject: subject.trim(), body: body.trim(), recipientId: recipient !== 'all' ? recipient : undefined })
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
     setSending(true)

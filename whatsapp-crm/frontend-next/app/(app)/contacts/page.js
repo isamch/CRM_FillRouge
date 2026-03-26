@@ -14,7 +14,8 @@ import {
   getContacts, createContact, updateContact, deleteContact,
   validateContacts, clearInvalid, importContacts,
 } from '@/lib/contacts'
-import { validateContact, validateContactUpdate } from '@/lib/validations/contact/contactValidation'
+import { validateCreateContact } from '@/lib/validations/contact/createContact.validation'
+import { validateUpdateContact } from '@/lib/validations/contact/updateContact.validation'
 import WhatsAppRequired from '@/components/WhatsAppRequired'
 
 // ─── Small Modal ─────────────────────────────────────────────────
@@ -142,7 +143,7 @@ export default function ContactsPage() {
 
   const handleAddContact = async () => {
     if (!selectedList) return
-    const errs = validateContact({ name: newContact.name, phone: newContact.phone, notes: newContact.notes })
+    const errs = validateCreateContact({ name: newContact.name, phone: newContact.phone, notes: newContact.notes })
 
     // const errs = validateContact(form)
     if (Object.keys(errs).length) {
@@ -165,7 +166,7 @@ export default function ContactsPage() {
 
   const handleEditContact = async () => {
     if (!showEditContact) return
-    const errs = validateContactUpdate({ name: editData.name, phone: editData.phone, notes: editData.notes })
+    const errs = validateUpdateContact({ name: editData.name, phone: editData.phone, notes: editData.notes })
     if (Object.keys(errs).length) { setEditErrors(errs); return }
     setEditErrors({})
     try {

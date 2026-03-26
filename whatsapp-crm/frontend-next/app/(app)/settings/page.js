@@ -7,6 +7,7 @@ import { UserIcon, LockIcon, SmartphoneIcon, ShieldAlertIcon, Loader2Icon } from
 import { useApp } from '@/context/AppContext'
 import { PageHeader, FormField } from '@/components/ui'
 import { updateProfile, changePassword } from '@/lib/settings'
+import { validateUpdatePassword } from '@/lib/validations/settings/updatePassword.validation'
 import { getWhatsappProfile, disconnectWhatsapp } from '@/lib/whatsapp'
 import { useAlert } from '@/context/AlertContext'
 import { saveUser } from '@/lib/auth'
@@ -67,12 +68,7 @@ export default function SettingsPage() {
   }
 
   const handleChangePassword = async () => {
-    const errs = {}
-    if (!currentPassword) errs.currentPassword = 'Current password is required'
-    if (!newPassword) errs.newPassword = 'New password is required'
-    else if (newPassword.length < 6) errs.newPassword = 'Password must be at least 6 characters'
-    if (!confirmPassword) errs.confirmPassword = 'Please confirm your password'
-    else if (newPassword !== confirmPassword) errs.confirmPassword = 'Passwords do not match'
+    const errs = validateUpdatePassword({ currentPassword, newPassword, confirmPassword })
     if (Object.keys(errs).length) { setPasswordErrors(errs); return }
     setPasswordErrors({})
     setSavingPassword(true)

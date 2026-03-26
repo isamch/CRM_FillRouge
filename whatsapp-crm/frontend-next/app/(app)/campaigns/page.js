@@ -16,7 +16,8 @@ import {
   runCampaign, pauseCampaign, resumeCampaign, stopCampaign,
   getCampaignLogs, resetCampaign,
 } from '@/lib/campaigns'
-import { validateCampaign } from '@/lib/validations/campaign/campaignValidation'
+import { validateCreateCampaign } from '@/lib/validations/campaign/createCampaign.validation'
+import { validateUpdateCampaign } from '@/lib/validations/campaign/updateCampaign.validation'
 
 const TABS = ['all', 'draft', 'running', 'paused', 'completed', 'stopped']
 
@@ -493,10 +494,9 @@ function CampaignEdit({ campaign, onCancel, onSaved, showAlert }) {
   }, [])
 
   const handleSave = async () => {
-    const errs = validateCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
+    const errs = validateUpdateCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
-
     setSaving(true)
     try {
       await updateCampaign(campaign._id, { name: name.trim(), templateId, listId, ratePerMinute: rate })
@@ -658,7 +658,7 @@ function CampaignCreate({ onCancel, onCreated, showAlert }) {
   }, [])
 
   const handleSubmit = async () => {
-    const errs = validateCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
+    const errs = validateCreateCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
     setSaving(true)

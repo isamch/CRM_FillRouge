@@ -7,7 +7,7 @@ import { SearchInput } from '@/components/ui'
 import { useAlert } from '@/context/AlertContext'
 import { useApp } from '@/context/AppContext'
 import { getUsers, createUser, deleteUser, toggleStatus } from '@/lib/users'
-import { validateCreateUser, getPasswordStrength, generatePassword } from '@/lib/validations/user/createUserValidation'
+import { validateCreateUser, getPasswordStrength, generatePassword } from '@/lib/validations/user/createUser.validation'
 
 function Modal({ title, onClose, children }) {
   return (
