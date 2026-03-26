@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboardIcon, MessageSquareIcon, UsersIcon, BookOpenIcon,
-  SendIcon, BellIcon, SettingsIcon, ShieldIcon, BarChart3Icon,
+  SendIcon, BellIcon, SettingsIcon, ShieldIcon,
   SmartphoneIcon, WifiIcon, WifiOffIcon,
 } from 'lucide-react'
 import { useApp } from '@/context/AppContext'
@@ -19,7 +19,6 @@ const navItems = [
 
 const adminItems = [
   { id: 'admin-users', label: 'Users', icon: ShieldIcon, href: '/admin/users' },
-  { id: 'admin-analytics', label: 'Analytics', icon: BarChart3Icon, href: '/admin/analytics' },
   { id: 'admin-notifications', label: 'Send Notification', icon: BellIcon, href: '/admin/notifications' },
 ]
 
