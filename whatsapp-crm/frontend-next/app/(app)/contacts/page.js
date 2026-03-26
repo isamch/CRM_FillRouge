@@ -14,6 +14,7 @@ import {
   getContacts, createContact, updateContact, deleteContact,
   validateContacts, clearInvalid, importContacts,
 } from '@/lib/contacts'
+import { validateContact, validateContactUpdate } from '@/lib/validations/contact/contactValidation'
 import WhatsAppRequired from '@/components/WhatsAppRequired'
 
 // ─── Small Modal ─────────────────────────────────────────────────
@@ -113,7 +114,7 @@ export default function ContactsPage() {
 
   // ── handlers
   const handleAddCategory = async () => {
-    if (!catName.trim()) return
+    if (!catName.trim() || catName.trim().length < 2) { showAlert('Name must be at least 2 characters', 'error'); return }
     try {
       const res = await createCategory({ name: catName.trim() })
       setCategories(p => [...p, res.data.category])
@@ -124,7 +125,8 @@ export default function ContactsPage() {
   }
 
   const handleAddList = async () => {
-    if (!listName.trim() || !addListCatId) return
+    if (!listName.trim() || listName.trim().length < 2) { showAlert('Name must be at least 2 characters', 'error'); return }
+    if (!addListCatId) return
     try {
       const res = await createList({ name: listName.trim(), categoryId: addListCatId })
       setLists(p => [...p, res.data.list])
@@ -135,7 +137,9 @@ export default function ContactsPage() {
   }
 
   const handleAddContact = async () => {
-    if (!newContact.phone.trim() || !selectedList) return
+    if (!selectedList) return
+    const errors = validateContact({ name: newContact.name, phone: newContact.phone, notes: newContact.notes })
+    if (Object.keys(errors).length) { showAlert(Object.values(errors)[0], 'error'); return }
     try {
       const res = await createContact({ ...newContact, listId: selectedList._id })
       setContacts(p => [...p, res.data.contact])
@@ -148,6 +152,8 @@ export default function ContactsPage() {
 
   const handleEditContact = async () => {
     if (!showEditContact) return
+    const errors = validateContactUpdate({ name: editData.name, phone: editData.phone, notes: editData.notes })
+    if (Object.keys(errors).length) { showAlert(Object.values(errors)[0], 'error'); return }
     try {
       const res = await updateContact(showEditContact._id, editData)
       setContacts(p => p.map(c => c._id === showEditContact._id ? res.data.contact : c))

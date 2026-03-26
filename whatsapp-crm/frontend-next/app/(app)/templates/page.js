@@ -6,6 +6,7 @@ import { PlusIcon, SearchIcon, CopyIcon, EditIcon, Trash2Icon, MessageSquareIcon
 import { SearchInput } from '@/components/ui'
 import { useAlert } from '@/context/AlertContext'
 import { getTemplates, createTemplate, updateTemplate, deleteTemplate } from '@/lib/templates'
+import { validateTemplate } from '@/lib/validations/template/templateValidation'
 import WhatsAppRequired from '@/components/WhatsAppRequired'
 
 export default function TemplatesPage() {
@@ -59,10 +60,13 @@ export default function TemplatesPage() {
   }
 
   const handleSave = async () => {
-    const finalName = name.trim() || 'Untitled Template'
-    const finalBody = body.trim() || 'Hello {{name}}, this is a message from us.'
+    const errors = validateTemplate({ name: name.trim(), body: body.trim() })
+    if (errors.name) { showAlert(errors.name, 'error'); return }
+    if (errors.body) { showAlert(errors.body, 'error'); return }
     setSaving(true)
     try {
+      const finalName = name.trim()
+      const finalBody = body.trim()
       if (selectedTemplate && selectedTemplate._id !== DRAFT_ID) {
         const res = await updateTemplate(selectedTemplate._id, { name: finalName, body: finalBody })
         setTemplates(prev => prev.map(t => t._id === selectedTemplate._id ? res.data.template : t))

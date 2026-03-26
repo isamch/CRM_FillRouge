@@ -16,6 +16,7 @@ import {
   runCampaign, pauseCampaign, resumeCampaign, stopCampaign,
   getCampaignLogs, resetCampaign,
 } from '@/lib/campaigns'
+import { validateCampaign } from '@/lib/validations/campaign/campaignValidation'
 
 const TABS = ['all', 'draft', 'running', 'paused', 'completed', 'stopped']
 
@@ -491,7 +492,10 @@ function CampaignEdit({ campaign, onCancel, onSaved, showAlert }) {
   }, [])
 
   const handleSave = async () => {
-    if (!name.trim() || !templateId || !listId) return showAlert('Please fill all fields', 'error')
+    const errors = validateCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
+    
+    if (Object.keys(errors).length) { showAlert(Object.values(errors)[0], 'error'); return }
+
     setSaving(true)
     try {
       await updateCampaign(campaign._id, { name: name.trim(), templateId, listId, ratePerMinute: rate })
@@ -649,7 +653,8 @@ function CampaignCreate({ onCancel, onCreated, showAlert }) {
   }, [])
 
   const handleSubmit = async () => {
-    if (!name.trim() || !templateId || !listId) return showAlert('Please fill all fields', 'error')
+    const errors = validateCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })
+    if (Object.keys(errors).length) { showAlert(Object.values(errors)[0], 'error'); return }
     setSaving(true)
     try {
       await createCampaign({ name: name.trim(), templateId, listId, ratePerMinute: rate })

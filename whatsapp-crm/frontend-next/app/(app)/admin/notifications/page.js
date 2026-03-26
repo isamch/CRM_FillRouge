@@ -7,6 +7,7 @@ import { useAlert } from '@/context/AlertContext'
 import api from '@/lib/api'
 import { getInbox } from '@/lib/notifications'
 import { getUsers } from '@/lib/users'
+import { validateNotification } from '@/lib/validations/notification/notificationValidation'
 
 export default function AdminNotificationsPage() {
   const [users, setUsers]         = useState([])
@@ -30,7 +31,8 @@ export default function AdminNotificationsPage() {
   }, [])
 
   const handleSend = async () => {
-    if (!subject.trim() || !body.trim()) return showAlert('Please fill all fields', 'error')
+    const errors = validateNotification({ subject: subject.trim(), body: body.trim(), recipientId: recipient !== 'all' ? recipient : undefined })
+    if (Object.keys(errors).length) { showAlert(Object.values(errors)[0], 'error'); return }
     setSending(true)
     try {
       const payload = {
