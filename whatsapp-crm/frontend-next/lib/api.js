@@ -1,4 +1,5 @@
 import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from './auth'
+import { refreshApi } from './auth-api'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
 
@@ -8,17 +9,8 @@ async function refreshAccessToken() {
   const refreshToken = getRefreshToken()
   if (!refreshToken) throw new Error('No refresh token')
 
-  const res = await fetch(`${BASE_URL}/auth/refresh-token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: refreshToken }),
-  })
-
-  const data = await res.json()
-  if (!res.ok) throw new Error('Refresh failed')
-
+  const data = await refreshApi(refreshToken)
   saveTokens(data.data.accessToken, data.data.refreshToken)
-
   return data.data.accessToken
 }
 

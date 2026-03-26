@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { getUser, saveUser, saveTokens, clearTokens, isAuthenticated } from '@/lib/auth'
 import api from '@/lib/api'
 import { getUnreadCount } from '@/lib/notifications'
+import { loginApi, registerApi, logoutApi } from '@/lib/auth-api'
 
 const AppContext = createContext(null)
 
@@ -53,7 +54,7 @@ export function AppProvider({ children }) {
   }, [user])
 
   const login = async ({ email, password }) => {
-    const data = await api.post('/auth/login', { email, password })
+    const data = await loginApi(email, password)
     const { user, accessToken, refreshToken } = data.data
     saveTokens(accessToken, refreshToken)
     saveUser(user)
@@ -62,11 +63,11 @@ export function AppProvider({ children }) {
   }
 
   const register = async ({ name, email, password }) => {
-    return api.post('/auth/register', { name, email, password })
+    return registerApi(name, email, password)
   }
 
   const logout = async () => {
-    try { await api.post('/auth/logout') } catch {}
+    try { await logoutApi() } catch {}
     clearTokens()
     setUser(null)
   }
