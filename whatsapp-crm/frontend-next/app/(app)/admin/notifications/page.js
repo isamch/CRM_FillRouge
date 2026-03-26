@@ -6,6 +6,7 @@ import { SendIcon, BellIcon, UsersIcon, Loader2Icon } from 'lucide-react'
 import { useAlert } from '@/context/AlertContext'
 import api from '@/lib/api'
 import { getInbox } from '@/lib/notifications'
+import { getUsers } from '@/lib/users'
 
 export default function AdminNotificationsPage() {
   const [users, setUsers]         = useState([])
@@ -19,7 +20,7 @@ export default function AdminNotificationsPage() {
 
   useEffect(() => {
     Promise.all([
-      api.get('/users?limit=100'),
+      getUsers(),
       api.get('/notifications/sent'),
     ]).then(([uRes, sRes]) => {
       setUsers(uRes.data?.users || [])
