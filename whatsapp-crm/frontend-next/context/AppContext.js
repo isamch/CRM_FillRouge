@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { getUser, saveUser, saveTokens, clearTokens, isAuthenticated } from '@/lib/auth'
 import api from '@/lib/api'
 import { getUnreadCount } from '@/lib/notifications'
-import { loginApi, registerApi, logoutApi } from '@/lib/auth-api'
+import { loginApi, registerApi } from '@/lib/auth-api'
 
 const AppContext = createContext(null)
 
@@ -67,7 +67,7 @@ export function AppProvider({ children }) {
   }
 
   const logout = async () => {
-    try { await logoutApi() } catch {}
+    try { await api.post('/auth/logout') } catch {}
     clearTokens()
     setUser(null)
   }
