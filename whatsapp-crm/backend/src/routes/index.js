@@ -13,7 +13,7 @@ import templateRoutes from './api/template.routes.js'
 import campaignRoutes from './api/campaign.routes.js'
 import notificationRoutes from './api/notification.routes.js'
 import dashboardRoutes from './api/dashboard.routes.js'
-// NEW_ROUTE_IMPORT
+
 
 const router = Router()
 
@@ -32,6 +32,6 @@ router.use('/templates', templateRoutes)
 router.use('/campaigns', campaignRoutes)
 router.use('/notifications', notificationRoutes)
 router.use('/dashboard', dashboardRoutes)
-// NEW_ROUTE_USE
+
 
 export default router

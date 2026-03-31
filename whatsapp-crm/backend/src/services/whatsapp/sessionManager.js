@@ -38,7 +38,7 @@ export const createClient = (userId) => {
     await WhatsappSession.findOneAndUpdate(
       { userId },
       { status: 'connected', connectedAt: new Date() },
-      { upsert: true }
+      { upsert: true } // create dak l row if not exist (the whatsappSession )
     )
   })
 
